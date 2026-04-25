@@ -81,215 +81,26 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const youtubeId = extractYoutubeId(url);
-    const validSpotify = isValidSpotifyUrl(spotifyUrl);
+    if (!title || !youtubeId) return alert("Title and YouTube ID are required.");
     
-    if (!youtubeId && !validSpotify) {
-      setError("Please provide either a valid YouTube URL or a valid Spotify URL.");
-      return;
-    }
+    setIsSubmitting(true);
 
-    const videoData: any = {
-    youtubeId: youtubeId || "",
-    title,
-    headline,
-    fullDescription,
-    guestName,
-    guestProfiles: normalizeTags(guestProfiles.split(',').map(s => s.trim()).filter(s => s)),
-    targetAudience: normalizeTags(targetAudience.split(',').map(s => s.trim()).filter(s => s)),
-    topics: normalizeTags(topics.split(',').map(s => s.trim()).filter(s => s)),
-    transcript,
-    publishedAt,
-    isShort: isShort,
+    // Auto-extract the 11-character ID if a full URL was pasted
+    const cleanYoutubeId = (input: string) => {
+      const match = input.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+      return match ? match[1] : input.trim();
     };
 
-// Only add spotifyUrl if it actually exists
-if (validSpotify && spotifyUrl.trim()) {
-  videoData.spotifyUrl = spotifyUrl.trim();
-}
+    const finalYoutubeId = cleanYoutubeId(youtubeId);
 
-    if (editVideo) {
-      logEvent('VIDEO_UPDATE', `Updating video: ${editVideo.id}`);
-      onUpdate(editVideo.id, videoData);
-    } else {
-      logEvent('VIDEO_ADD', `Adding video: ${title}`);
-      onAdd(videoData as any);
-    }
-    
-    resetAndClose();
-  };
-
-  const handleBulkSubmit = async () => {
-    if (!bulkText) return;
-    setIsAnalyzing(true);
-    setError(null);
-    setSuccessMsg(null);
-    logEvent('SUBMIT_BULK_START', `Processing bulk text length: ${bulkText.length}`);
-
-    try {
-        // Passed the available tags so the AI categorizes bulk imports correctly
-        const videosFromAI = await parseBulkVideoInput(bulkText, availableProfiles, availableTopics, availableAudiences);
-        const validVideos: Omit<VideoEntry, 'id' | 'createdAt'>[] = [];
-        const failedItems: string[] = [];
-
-        videosFromAI.forEach(v => {
-            const cleanYtId = extractYoutubeId(v.youtubeId);
-            const cleanSpotify = isValidSpotifyUrl(v.spotifyUrl) ? v.spotifyUrl!.trim() : undefined;
-            
-            if (cleanYtId || cleanSpotify) {
-                // FIX 2: Added "as any" to force TypeScript to accept the AI data
-                validVideos.push({
-                    ...v,
-                    youtubeId: cleanYtId || "",
-                    spotifyUrl: cleanSpotify,
-                    isShort: v.isShort === 'Y' ? 'Y' : 'N',
-                    publishedAt: v.publishedAt || new Date().toISOString().split('T')[0]
-                } as any); 
-            } else {
-                failedItems.push(v.title || 'Untitled Item');
-            }
-        });
-
-        if (validVideos.length > 0) {
-            validVideos.forEach(v => onAdd(v));
-            setSuccessMsg(`Successfully imported ${validVideos.length} videos.`);
-            if (failedItems.length === 0) {
-                 setTimeout(resetAndClose, 1500);
-            }
-        }
-        
-        if (failedItems.length > 0) {
-            const failMsg = `Skipped ${failedItems.length} items because no valid URL was found: "${failedItems.join('", "')}"`;
-            setError(failMsg);
-        } else if (validVideos.length === 0) {
-            setError("No valid items found.");
-        }
-
-    } catch (err) {
-        setError("Failed to process bulk text.");
-    } finally {
-        setIsAnalyzing(false);
-    }
-  };
-
-  const handleDelete = () => {
-    if (editVideo && window.confirm("Are you sure you want to delete this video? This cannot be undone.")) {
-      onDelete(editVideo.id);
-    }
-  };
-
-  const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      processCsv(text);
+    const videoData = {
+      title, headline, fullDescription, guestName, isShort, 
+      youtubeId: finalYoutubeId, spotifyUrl, guestProfiles, targetAudience, topics
     };
-    reader.readAsText(file);
-    e.target.value = ''; 
-  };
-
-  const processCsv = async (csvText: string) => {
-    setIsLoading(true);
-    setError("");
-    setSuccessMsg("");
 
     try {
-      // 1. Split text into rows and ignore empty lines
-      const rows = csvText.split('\n').filter(row => row.trim() !== '');
-      if (rows.length < 2) throw new Error("CSV file must contain headers and at least one row of data.");
-
-      // 2. Safe Row Parser (Ignores commas inside of quotation marks)
-      const parseRow = (row: string) => {
-        const regex = /(?:"([^"]*(?:""[^"]*)*)"|([^,]+))/g;
-        let matches;
-        const cols: string[] = [];
-        while ((matches = regex.exec(row)) !== null) {
-          let val = matches[1] || matches[2] || '';
-          cols.push(val.replace(/""/g, '"').trim());
-        }
-        return cols;
-      };
-
-      // 3. Map the column headers so the order doesn't matter
-      const headers = parseRow(rows[0]).map(h => h.toLowerCase());
-      const getIdx = (aliases: string[]) => headers.findIndex(h => aliases.some(a => h.includes(a)));
-      
-      const titleIdx = getIdx(['title']);
-      const ytIdx = getIdx(['youtubeid', 'youtube']);
-      const spotIdx = getIdx(['spotifyurl', 'spotify']);
-      const headlineIdx = getIdx(['headline']);
-      const fullDescIdx = getIdx(['fulldescription', 'description']);
-      const guestIdx = getIdx(['guestname', 'guest']);
-      const profilesIdx = getIdx(['guestprofiles', 'profiles']);
-      const audienceIdx = getIdx(['targetaudience', 'audience']);
-      const topicsIdx = getIdx(['topics']);
-      const transcriptIdx = getIdx(['transcript']);
-      const dateIdx = getIdx(['publisheddate', 'date']);
-      const shortsIdx = getIdx(['isshort', 'short']);
-
-      if (titleIdx === -1) {
-        throw new Error("CSV must have at least a 'Title' column.");
-      }
-
-      let addedCount = 0;
-      let skippedCount = 0;
-
-      // 4. Loop through the data rows
-      for (let i = 1; i < rows.length; i++) {
-        const cols = parseRow(rows[i]);
-        const getVal = (idx: number) => idx >= 0 && cols[idx] ? cols[idx] : "";
-        
-        const titleVal = getVal(titleIdx);
-        const youtubeId = getVal(ytIdx);
-        const spotifyUrl = getVal(spotIdx);
-
-        if (!titleVal) continue; // Skip completely empty rows
-
-        // 🛑 THE GATEKEEPER: DUPLICATE CHECKER
-        const isDuplicate = existingVideos.some(v => 
-          (youtubeId && v.youtubeId === youtubeId) || 
-          (spotifyUrl && v.spotifyUrl === spotifyUrl) ||
-          (v.title.toLowerCase() === titleVal.toLowerCase())
-        );
-
-        if (isDuplicate) {
-          skippedCount++; // It exists! Skip it.
-          continue; 
-        }
-
-        // 5. Build the new video object
-        // (Checks if array items are separated by commas or semicolons)
-        const profileStr = getVal(profilesIdx);
-        const splitChar = profileStr.includes(';') ? ';' : ',';
-
-        const newVideo: Omit<VideoEntry, 'id' | 'createdAt'> = {
-          title: titleVal,
-          youtubeId: youtubeId,
-          spotifyUrl: spotifyUrl,
-          headline: getVal(headlineIdx),
-          fullDescription: getVal(fullDescIdx),
-          guestName: getVal(guestIdx),
-          publishedAt: getVal(dateIdx) || new Date().toISOString().split('T')[0],
-          guestProfiles: profileStr.split(splitChar).map(s => s.trim()).filter(Boolean),
-          topics: getVal(topicsIdx).split(splitChar).map(s => s.trim()).filter(Boolean),
-          targetAudience: getVal(audienceIdx).split(splitChar).map(s => s.trim()).filter(Boolean),
-          transcript: getVal(transcriptIdx),
-          isShort: getVal(shortsIdx).toUpperCase() === 'Y' ? 'Y' : 'N'
-        };
-
-        // 6. Save it to the database!
-        await onAdd(newVideo); 
-        addedCount++;
-      }
-
-      // 7. Show the final results
-      if (addedCount > 0 || skippedCount > 0) {
-        setSuccessMsg(`Import complete! Added ${addedCount} new videos. (Skipped ${skippedCount} duplicates).`);
-        if (addedCount > 0) {
-          setTimeout(() => onClose(), 3000); // Close modal automatically after 3 seconds
-        }
+      if (editVideo) {
+        await onUpdate(editVideo.id, videoData);
       } else {
         await onAdd(videoData);
       }
@@ -329,12 +140,12 @@ if (validSpotify && spotifyUrl.trim()) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">YouTube ID *</label>
-              <input type="text" value={youtubeId} onChange={e => setYoutubeId(e.target.value)} required className="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="dQw4w9WgXcQ" />
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">YouTube ID or Link *</label>
+              <input type="text" value={youtubeId} onChange={e => setYoutubeId(e.target.value)} required className="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="dQw4w9WgXcQ or Full Link" />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Spotify URL</label>
-              <input type="url" value={spotifyUrl} onChange={e => setSpotifyUrl(e.target.value)} className="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" placeholder="https://open.spotify.com/..." />
+              <input type="url" value={spotifyUrl} onChange={e => setSpotifyUrl(e.target.value)} className="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" placeholder="https://open.spotify.com/episode/..." />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Format</label>
@@ -391,7 +202,7 @@ if (validSpotify && spotifyUrl.trim()) {
               </div>
             </div>
 
-            {/* Target Audience (NEWLY ADDED) */}
+            {/* Target Audience */}
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Target Audience</label>
               <div className="flex gap-2 mb-2">
