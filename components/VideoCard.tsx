@@ -26,10 +26,19 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
     : PENDING_IMAGE;
 
   // Trackers
+  // Trackers
   const YT_TRACKER = "si=HGWebsite";
   const getSpotifyUrl = (url: string) => `${url}${url.includes('?') ? '&' : '?'}${YT_TRACKER}`;
-  const getYoutubeUrl = (id: string) => `https://www.youtube.com/watch?v=${id}&${YT_TRACKER}`;
-
+  
+  // Bulletproof YouTube URL Generator
+  const getYoutubeUrl = (id: string) => {
+    if (!id) return '';
+    // This dynamically extracts the 11-character ID just in case the database contains a full URL
+    const match = id.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+    const cleanId = match ? match[1] : id.trim();
+    
+    return `https://www.youtube.com/watch?v=${cleanId}&${YT_TRACKER}`;
+  };
   const handleWatchClick = () => {
       logEvent('VIDEO_WATCH_CLICK', `User clicked to watch: ${video.title} (${video.youtubeId})`);
   };
