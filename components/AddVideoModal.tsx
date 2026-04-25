@@ -285,44 +285,39 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const youtubeId = extractYoutubeId(url);
-    const validSpotify = isValidSpotifyUrl(spotifyUrl);
+    if (!title || !youtubeId) return alert("Title and YouTube ID are required.");
     
-    if (!youtubeId && !validSpotify) {
-      setError("Please provide either a valid YouTube URL or a valid Spotify URL.");
-      return;
-    }
+    setIsSubmitting(true);
 
-    const videoData: any = {
-    youtubeId: youtubeId || "",
-    title,
-    headline,
-    fullDescription,
-    guestName,
-    guestProfiles: normalizeTags(guestProfiles.split(',').map(s => s.trim()).filter(s => s)),
-    targetAudience: normalizeTags(targetAudience.split(',').map(s => s.trim()).filter(s => s)),
-    topics: normalizeTags(topics.split(',').map(s => s.trim()).filter(s => s)),
-    transcript,
-    publishedAt,
-    isShort: isShort,
+    // NEW: Auto-extract the 11-character ID if a full URL was pasted
+    const cleanYoutubeId = (input: string) => {
+      // This regex looks for standard YouTube URLs, youtu.be links, or shorts, and grabs the ID
+      const match = input.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+      return match ? match[1] : input.trim();
     };
 
-// Only add spotifyUrl if it actually exists
-if (validSpotify && spotifyUrl.trim()) {
-  videoData.spotifyUrl = spotifyUrl.trim();
-}
+    const finalYoutubeId = cleanYoutubeId(youtubeId);
 
-    if (editVideo) {
-      logEvent('VIDEO_UPDATE', `Updating video: ${editVideo.id}`);
-      onUpdate(editVideo.id, videoData);
-    } else {
-      logEvent('VIDEO_ADD', `Adding video: ${title}`);
-      onAdd(videoData as any);
+    const videoData = {
+      title, headline, fullDescription, guestName, isShort, 
+      youtubeId: finalYoutubeId, // Uses the cleaned ID
+      spotifyUrl, guestProfiles, targetAudience, topics
+    };
+
+    try {
+      if (editVideo) {
+        await onUpdate(editVideo.id, videoData);
+      } else {
+        await onAdd(videoData);
+      }
+    } catch (error) {
+      console.error("Save failed:", error);
+      alert("Failed to save changes.");
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    resetAndClose();
   };
 
   const handleBulkSubmit = async () => {
