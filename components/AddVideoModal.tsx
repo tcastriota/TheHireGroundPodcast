@@ -16,7 +16,7 @@ interface AddVideoModalProps {
 }
 
 export const AddVideoModal: React.FC<AddVideoModalProps> = ({
-  isOpen, onClose, editVideo, onAdd, onUpdate, onDelete
+  isOpen, onClose, editVideo, onAdd, onUpdate, onDelete, availableProfiles, availableTopics, availableAudiences
 }) => {
   // Form State
   const [title, setTitle] = useState('');
@@ -123,8 +123,7 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
           <h2 className="text-xl font-bold text-gray-900">{editVideo ? 'Edit Episode' : 'Add New Episode'}</h2>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"><X size={20} /></button>
         </div>
-
-        {/* Scrollable Form */}
+{/* Scrollable Form */}
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto flex-1 space-y-5">
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -174,7 +173,10 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Topics</label>
               <div className="flex gap-2 mb-2">
-                <input type="text" value={topicInput} onChange={e => setTopicInput(e.target.value)} onKeyDown={e => handleTagAdd(e, topicInput, setTopics, setTopicInput)} className="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Add a topic..." />
+                <input type="text" list="topics-list" value={topicInput} onChange={e => setTopicInput(e.target.value)} onKeyDown={e => handleTagAdd(e, topicInput, setTopics, setTopicInput)} className="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Select or add a topic..." />
+                <datalist id="topics-list">
+                  {availableTopics.map(t => <option key={t} value={t} />)}
+                </datalist>
                 <button type="button" onClick={e => handleTagAdd(e, topicInput, setTopics, setTopicInput)} className="px-3 bg-gray-100 rounded-lg hover:bg-gray-200"><Plus size={16} /></button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -190,7 +192,10 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Guest Profiles</label>
               <div className="flex gap-2 mb-2">
-                <input type="text" value={profileInput} onChange={e => setProfileInput(e.target.value)} onKeyDown={e => handleTagAdd(e, profileInput, setGuestProfiles, setProfileInput)} className="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Add a profile..." />
+                <input type="text" list="profiles-list" value={profileInput} onChange={e => setProfileInput(e.target.value)} onKeyDown={e => handleTagAdd(e, profileInput, setGuestProfiles, setProfileInput)} className="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Select or add a profile..." />
+                <datalist id="profiles-list">
+                  {availableProfiles.map(p => <option key={p} value={p} />)}
+                </datalist>
                 <button type="button" onClick={e => handleTagAdd(e, profileInput, setGuestProfiles, setProfileInput)} className="px-3 bg-gray-100 rounded-lg hover:bg-gray-200"><Plus size={16} /></button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -206,7 +211,10 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Target Audience</label>
               <div className="flex gap-2 mb-2">
-                <input type="text" value={audienceInput} onChange={e => setAudienceInput(e.target.value)} onKeyDown={e => handleTagAdd(e, audienceInput, setTargetAudience, setAudienceInput)} className="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Add an audience (e.g., Job Seekers, Startups)..." />
+                <input type="text" list="audience-list" value={audienceInput} onChange={e => setAudienceInput(e.target.value)} onKeyDown={e => handleTagAdd(e, audienceInput, setTargetAudience, setAudienceInput)} className="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Select or add an audience..." />
+                <datalist id="audience-list">
+                  {availableAudiences.map(a => <option key={a} value={a} />)}
+                </datalist>
                 <button type="button" onClick={e => handleTagAdd(e, audienceInput, setTargetAudience, setAudienceInput)} className="px-3 bg-gray-100 rounded-lg hover:bg-gray-200"><Plus size={16} /></button>
               </div>
               <div className="flex flex-wrap gap-2">

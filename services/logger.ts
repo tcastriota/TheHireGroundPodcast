@@ -201,22 +201,27 @@ export const downloadLogsAsCsv = () => {
   if (logs.length === 0) return alert("No logs found.");
 
   const headers = ["Timestamp", "ET Time", "Action", "Details", "IP", "City", "Country"];
+  
+  // Helper function to safely wrap every cell in quotes and escape internal quotes
+  const escapeCSV = (val: any) => `"${String(val || '').replace(/"/g, '""')}"`;
+
   const rows = logs.map(log => [
-    log.timestamp,
-    log.easternTime,
-    log.action,
-    `"${(log.details || '')}"`,
-    log.session?.ip,
-    log.session?.city,
-    log.session?.country
+    escapeCSV(log.timestamp),
+    escapeCSV(log.easternTime),
+    escapeCSV(log.action),
+    escapeCSV(log.details),
+    escapeCSV(log.session?.ip),
+    escapeCSV(log.session?.city),
+    escapeCSV(log.session?.country)
   ]);
 
+  // Combine headers and rows, then trigger the download
   const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const downloadUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = url;
-  link.download = `logs_${new Date().toISOString().slice(0,10)}.csv`;
+  link.href = downloadUrl;
+  link.download = `activity_logs_${new Date().toISOString().slice(0,10)}.csv`;
   link.click();
 };
 
