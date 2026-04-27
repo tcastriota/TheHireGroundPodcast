@@ -36,7 +36,7 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
   const [profileInput, setProfileInput] = useState('');
   const [audienceInput, setAudienceInput] = useState('');
   const [topicInput, setTopicInput] = useState('');
-
+  const [activeDropdown, setActiveDropdown] = useState<'topics' | 'profiles' | 'audience' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -170,15 +170,35 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
             <h3 className="font-bold text-sm text-gray-800">Tags & Metadata (Type and hit Enter to add new)</h3>
             
             {/* Topics */}
-            <div>
+            <div className="relative">
               <label className="block text-xs font-semibold text-gray-500 mb-1">Topics</label>
               <div className="flex gap-2 mb-2">
-                <input type="text" list="topics-list" value={topicInput} onChange={e => setTopicInput(e.target.value)} onKeyDown={e => handleTagAdd(e, topicInput, setTopics, setTopicInput)} className="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Select or add a topic..." />
-                <datalist id="topics-list">
-                  {availableTopics.map(t => <option key={t} value={t} />)}
-                </datalist>
+                <input 
+                  type="text" 
+                  value={topicInput} 
+                  onChange={e => setTopicInput(e.target.value)} 
+                  onFocus={() => setActiveDropdown('topics')}
+                  onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                  onKeyDown={e => handleTagAdd(e, topicInput, setTopics, setTopicInput)} 
+                  className="flex-1 border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" 
+                  placeholder="Select or type a new topic..." 
+                />
                 <button type="button" onClick={e => handleTagAdd(e, topicInput, setTopics, setTopicInput)} className="px-3 bg-gray-100 rounded-lg hover:bg-gray-200"><Plus size={16} /></button>
               </div>
+              
+              {/* Custom Row-by-Row Dropdown */}
+              {activeDropdown === 'topics' && availableTopics.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded-lg p-3 max-h-48 overflow-y-auto animate-fadeIn">
+                  <div className="flex flex-wrap gap-2">
+                    {availableTopics.filter(t => t.toLowerCase().includes(topicInput.toLowerCase())).map(t => (
+                      <button key={t} type="button" onClick={(e) => handleTagAdd(e, t, setTopics, setTopicInput)} className="px-3 py-1.5 bg-gray-50 hover:bg-emerald-500 hover:text-white text-gray-700 text-xs font-medium rounded-md border border-gray-200 hover:border-emerald-600 transition-colors cursor-pointer text-left">
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 {topics.map(t => (
                   <span key={t} className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md text-xs font-medium border border-emerald-100">
@@ -189,15 +209,35 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
             </div>
 
             {/* Profiles */}
-            <div>
+            <div className="relative">
               <label className="block text-xs font-semibold text-gray-500 mb-1">Guest Profiles</label>
               <div className="flex gap-2 mb-2">
-                <input type="text" list="profiles-list" value={profileInput} onChange={e => setProfileInput(e.target.value)} onKeyDown={e => handleTagAdd(e, profileInput, setGuestProfiles, setProfileInput)} className="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Select or add a profile..." />
-                <datalist id="profiles-list">
-                  {availableProfiles.map(p => <option key={p} value={p} />)}
-                </datalist>
+                <input 
+                  type="text" 
+                  value={profileInput} 
+                  onChange={e => setProfileInput(e.target.value)} 
+                  onFocus={() => setActiveDropdown('profiles')}
+                  onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                  onKeyDown={e => handleTagAdd(e, profileInput, setGuestProfiles, setProfileInput)} 
+                  className="flex-1 border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
+                  placeholder="Select or type a new profile..." 
+                />
                 <button type="button" onClick={e => handleTagAdd(e, profileInput, setGuestProfiles, setProfileInput)} className="px-3 bg-gray-100 rounded-lg hover:bg-gray-200"><Plus size={16} /></button>
               </div>
+
+              {/* Custom Row-by-Row Dropdown */}
+              {activeDropdown === 'profiles' && availableProfiles.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded-lg p-3 max-h-48 overflow-y-auto animate-fadeIn">
+                  <div className="flex flex-wrap gap-2">
+                    {availableProfiles.filter(p => p.toLowerCase().includes(profileInput.toLowerCase())).map(p => (
+                      <button key={p} type="button" onClick={(e) => handleTagAdd(e, p, setGuestProfiles, setProfileInput)} className="px-3 py-1.5 bg-gray-50 hover:bg-blue-600 hover:text-white text-gray-700 text-xs font-medium rounded-md border border-gray-200 hover:border-blue-700 transition-colors cursor-pointer text-left">
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 {guestProfiles.map(p => (
                   <span key={p} className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-medium border border-blue-100">
@@ -208,15 +248,35 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
             </div>
 
             {/* Target Audience */}
-            <div>
+            <div className="relative">
               <label className="block text-xs font-semibold text-gray-500 mb-1">Target Audience</label>
               <div className="flex gap-2 mb-2">
-                <input type="text" list="audience-list" value={audienceInput} onChange={e => setAudienceInput(e.target.value)} onKeyDown={e => handleTagAdd(e, audienceInput, setTargetAudience, setAudienceInput)} className="flex-1 border p-2 rounded-lg text-sm outline-none" placeholder="Select or add an audience..." />
-                <datalist id="audience-list">
-                  {availableAudiences.map(a => <option key={a} value={a} />)}
-                </datalist>
+                <input 
+                  type="text" 
+                  value={audienceInput} 
+                  onChange={e => setAudienceInput(e.target.value)} 
+                  onFocus={() => setActiveDropdown('audience')}
+                  onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                  onKeyDown={e => handleTagAdd(e, audienceInput, setTargetAudience, setAudienceInput)} 
+                  className="flex-1 border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500" 
+                  placeholder="Select or type an audience..." 
+                />
                 <button type="button" onClick={e => handleTagAdd(e, audienceInput, setTargetAudience, setAudienceInput)} className="px-3 bg-gray-100 rounded-lg hover:bg-gray-200"><Plus size={16} /></button>
               </div>
+
+              {/* Custom Row-by-Row Dropdown */}
+              {activeDropdown === 'audience' && availableAudiences.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded-lg p-3 max-h-48 overflow-y-auto animate-fadeIn">
+                  <div className="flex flex-wrap gap-2">
+                    {availableAudiences.filter(a => a.toLowerCase().includes(audienceInput.toLowerCase())).map(a => (
+                      <button key={a} type="button" onClick={(e) => handleTagAdd(e, a, setTargetAudience, setAudienceInput)} className="px-3 py-1.5 bg-gray-50 hover:bg-purple-600 hover:text-white text-gray-700 text-xs font-medium rounded-md border border-gray-200 hover:border-purple-700 transition-colors cursor-pointer text-left">
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 {targetAudience.map(a => (
                   <span key={a} className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-medium border border-purple-100">
