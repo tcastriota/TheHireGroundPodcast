@@ -4,12 +4,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-
-# SECURITY FIX: Use ARG to pull the key from Cloud Build's secure vault, 
-# instead of hardcoding it in the file.
-ARG VITE_GEMINI_API_KEY
-ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
-
 RUN npm run build
 
 # Stage 2: Serve

@@ -389,8 +389,7 @@ const App: React.FC = () => {
                       setFilterState(prev => ({ ...prev, searchQuery: val, aiSearchActive: false }));
                       setAiResultIds(null);
                   }}
-                  placeholder="Ask AI about episodes..."
-                  className="flex-1 px-3 h-full outline-none text-sm text-gray-700 placeholder-gray-400 min-w-0 bg-transparent"
+placeholder="Search episodes by title, guest, or topic..."                  className="flex-1 px-3 h-full outline-none text-sm text-gray-700 placeholder-gray-400 min-w-0 bg-transparent"
               />
               {aiResultIds && (
                   <button type="button" onClick={clearAiSearch} className="px-3 h-full text-gray-400 hover:text-gray-600 border-l border-gray-100 flex items-center justify-center bg-gray-50 transition-colors shrink-0">
