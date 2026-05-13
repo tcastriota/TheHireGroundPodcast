@@ -4,7 +4,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# Catch the Firebase key from Cloud Build so Vite can see it
+ARG VITE_FIREBASE_API_KEY
+ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY
+
 RUN npm run build
+
+# ... (Keep Stage 2 exactly the same)
 
 # Stage 2: Serve
 FROM --platform=linux/amd64 nginx:stable-alpine
