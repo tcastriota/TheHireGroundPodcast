@@ -152,7 +152,7 @@ const App: React.FC = () => {
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
-  }, [videos, filterState, aiResultIds]);
+  }, [videos, filterState, aiResultIds, sortOrder]);
 
   const downloadVideosAsJson = () => {
     const blob = new Blob([JSON.stringify(videos, null, 2)], { type: 'application/json' });
