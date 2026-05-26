@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VideoEntry } from '../types';
-import { X, Save, Trash2, Plus } from 'lucide-react';
+import { X, Save, Trash2 } from 'lucide-react';
 
 interface AddVideoModalProps {
   isOpen: boolean;
@@ -123,7 +123,8 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
           <h2 className="text-xl font-bold text-gray-900">{editVideo ? 'Edit Episode' : 'Add New Episode'}</h2>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"><X size={20} /></button>
         </div>
-{/* Scrollable Form */}
+
+        {/* Scrollable Form */}
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto flex-1 space-y-5">
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -183,14 +184,13 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
                   className="flex-1 border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" 
                   placeholder="Select or type a new topic..." 
                 />
-                <button type="button" onClick={e => handleTagAdd(e, topicInput, setTopics, setTopicInput)} className="px-3 bg-gray-100 rounded-lg hover:bg-gray-200"><Plus size={16} /></button>
               </div>
               
               {/* Custom Row-by-Row Dropdown */}
               {activeDropdown === 'topics' && availableTopics.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded-lg p-3 max-h-48 overflow-y-auto animate-fadeIn">
                   <div className="flex flex-wrap gap-2">
-                    {availableTopics.filter(t => t.toLowerCase().includes(topicInput.toLowerCase())).map(t => (
+                    {availableTopics.filter(t => !topics.includes(t) && t.toLowerCase().includes(topicInput.toLowerCase())).map(t => (
                       <button key={t} type="button" onClick={(e) => handleTagAdd(e, t, setTopics, setTopicInput)} className="px-3 py-1.5 bg-gray-50 hover:bg-emerald-500 hover:text-white text-gray-700 text-xs font-medium rounded-md border border-gray-200 hover:border-emerald-600 transition-colors cursor-pointer text-left">
                         {t}
                       </button>
@@ -222,14 +222,13 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
                   className="flex-1 border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
                   placeholder="Select or type a new profile..." 
                 />
-                <button type="button" onClick={e => handleTagAdd(e, profileInput, setGuestProfiles, setProfileInput)} className="px-3 bg-gray-100 rounded-lg hover:bg-gray-200"><Plus size={16} /></button>
               </div>
 
               {/* Custom Row-by-Row Dropdown */}
               {activeDropdown === 'profiles' && availableProfiles.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded-lg p-3 max-h-48 overflow-y-auto animate-fadeIn">
                   <div className="flex flex-wrap gap-2">
-                    {availableProfiles.filter(p => p.toLowerCase().includes(profileInput.toLowerCase())).map(p => (
+                    {availableProfiles.filter(p => !guestProfiles.includes(p) && p.toLowerCase().includes(profileInput.toLowerCase())).map(p => (
                       <button key={p} type="button" onClick={(e) => handleTagAdd(e, p, setGuestProfiles, setProfileInput)} className="px-3 py-1.5 bg-gray-50 hover:bg-blue-600 hover:text-white text-gray-700 text-xs font-medium rounded-md border border-gray-200 hover:border-blue-700 transition-colors cursor-pointer text-left">
                         {p}
                       </button>
@@ -261,14 +260,13 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
                   className="flex-1 border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500" 
                   placeholder="Select or type an audience..." 
                 />
-                <button type="button" onClick={e => handleTagAdd(e, audienceInput, setTargetAudience, setAudienceInput)} className="px-3 bg-gray-100 rounded-lg hover:bg-gray-200"><Plus size={16} /></button>
               </div>
 
               {/* Custom Row-by-Row Dropdown */}
               {activeDropdown === 'audience' && availableAudiences.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded-lg p-3 max-h-48 overflow-y-auto animate-fadeIn">
                   <div className="flex flex-wrap gap-2">
-                    {availableAudiences.filter(a => a.toLowerCase().includes(audienceInput.toLowerCase())).map(a => (
+                    {availableAudiences.filter(a => !targetAudience.includes(a) && a.toLowerCase().includes(audienceInput.toLowerCase())).map(a => (
                       <button key={a} type="button" onClick={(e) => handleTagAdd(e, a, setTargetAudience, setAudienceInput)} className="px-3 py-1.5 bg-gray-50 hover:bg-purple-600 hover:text-white text-gray-700 text-xs font-medium rounded-md border border-gray-200 hover:border-purple-700 transition-colors cursor-pointer text-left">
                         {a}
                       </button>

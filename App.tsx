@@ -5,7 +5,7 @@ import { VideoCard, ViewMode } from './components/VideoCard';
 import { videoStorage } from './services/storage';
 import { AddVideoModal } from './components/AddVideoModal';
 import { 
-  Sparkles, Lock, Plus, List, LayoutGrid, Grid, Layout, Menu, X, Loader2, 
+  Sparkles, Mic, ArrowDown, ArrowUp, Lock, Plus, List, LayoutGrid, Grid, Layout, Menu, X, Loader2, 
   BookOpen, BarChart3, Tags, Settings, Download, FileJson, UploadCloud, 
   RefreshCcw, Database, FileSpreadsheet 
 } from 'lucide-react';
@@ -43,7 +43,7 @@ const App: React.FC = () => {
   const [aiQuery, setAiQuery] = useState('');
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [aiResultIds, setAiResultIds] = useState<string[] | null>(null);
-
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc'); // 'desc' is Latest First
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -146,10 +146,10 @@ const App: React.FC = () => {
       result = result.filter(v => v.isShort !== 'Y');
     }
 
-    return result.sort((a, b) => {
+   return result.sort((a, b) => {
       const dateA = new Date(a.publishedAt || a.createdAt).getTime();
       const dateB = new Date(b.publishedAt || b.createdAt).getTime();
-      return dateB - dateA;
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
   }, [videos, filterState, aiResultIds]);
@@ -372,10 +372,13 @@ const App: React.FC = () => {
           <button onClick={() => setIsMobileMenuOpen(true)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg lg:hidden shrink-0">
             <Menu size={20} />
           </button>
+          <div className="bg-blue-100 p-1.5 rounded-lg text-blue-600 hidden sm:flex">
+            <Mic size={18} />
+          </div>
           <h1 className="font-bold text-base md:text-xl truncate hidden sm:block text-gray-900">The Hire Ground Podcast</h1>
         </div>
 
-        <div className="flex-1 min-w-0 flex items-center justify-center max-w-2xl">
+        <div className="flex-1 min-w-0 flex items-center justify-center max-w-md ml-4">
           <form onSubmit={handleAiSearch} className="relative w-full flex items-center bg-white rounded-xl border border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all overflow-hidden h-10 md:h-12 group">
               <div className="pl-3 text-gray-400 flex items-center justify-center shrink-0">
                   {isAiSearching ? <Loader2 className="animate-spin text-blue-600" size={18} /> : <Sparkles className={`transition-colors ${aiResultIds ? "text-blue-600" : "text-gray-400 group-hover:text-blue-400"}`} size={18} />}
@@ -389,7 +392,8 @@ const App: React.FC = () => {
                       setFilterState(prev => ({ ...prev, searchQuery: val, aiSearchActive: false }));
                       setAiResultIds(null);
                   }}
-placeholder="Search episodes by title, guest, or topic..."                  className="flex-1 px-3 h-full outline-none text-sm text-gray-700 placeholder-gray-400 min-w-0 bg-transparent"
+                  placeholder="Search episodes by title, guest, or topic..."
+                  className="flex-1 px-3 h-full outline-none text-sm text-gray-700 placeholder-gray-400 min-w-0 bg-transparent"
               />
               {aiResultIds && (
                   <button type="button" onClick={clearAiSearch} className="px-3 h-full text-gray-400 hover:text-gray-600 border-l border-gray-100 flex items-center justify-center bg-gray-50 transition-colors shrink-0">
@@ -400,6 +404,25 @@ placeholder="Search episodes by title, guest, or topic..."                  clas
                   Search
               </button>
           </form>
+
+          {/* New Sort Buttons */}
+          <div className="flex items-center bg-white border border-gray-200 rounded-xl h-10 md:h-12 ml-2 overflow-hidden shadow-sm shrink-0">
+              <button 
+                  onClick={() => setSortOrder('desc')} 
+                  className={`px-3 h-full flex items-center justify-center transition-colors ${sortOrder === 'desc' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
+                  title="Latest First"
+              >
+                  <ArrowDown size={18} />
+              </button>
+              <div className="w-px h-full bg-gray-200"></div>
+              <button 
+                  onClick={() => setSortOrder('asc')} 
+                  className={`px-3 h-full flex items-center justify-center transition-colors ${sortOrder === 'asc' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
+                  title="Oldest First"
+              >
+                  <ArrowUp size={18} />
+              </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
