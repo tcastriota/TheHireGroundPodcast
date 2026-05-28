@@ -94,10 +94,13 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
             {video.targetAudience && video.targetAudience.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
                 {video.targetAudience.map((a, i) => (
-                  <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-50 text-purple-600 border border-purple-100 whitespace-nowrap">
+                  <span key={i} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-50 text-purple-600 border border-purple-100 whitespace-nowrap${i > 0 ? ' hidden md:inline-flex' : ''}`}>
                     {a}
                   </span>
                 ))}
+                {video.targetAudience.length > 1 && (
+                  <span className="md:hidden text-[9px] text-gray-400 self-center">+{video.targetAudience.length - 1}</span>
+                )}
               </div>
             )}
 
@@ -227,13 +230,16 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
                 Profile:
               </div>
               {video.guestProfiles.map((p, i) => (
-                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                <span key={i} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100${i > 0 ? ' hidden md:inline-flex' : ''}`}>
                   {p}
                 </span>
               ))}
+              {video.guestProfiles.length > 1 && (
+                <span className="md:hidden text-xs text-gray-400 self-center">+{video.guestProfiles.length - 1}</span>
+              )}
             </div>
           )}
-          
+
           {video.topics.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               <div className="flex items-center text-xs font-medium text-gray-500 mr-1" title="Topics">
@@ -241,10 +247,13 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
                 Topics:
               </div>
               {video.topics.map((t, i) => (
-                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                <span key={i} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100${i > 0 ? ' hidden md:inline-flex' : ''}`}>
                   {t}
                 </span>
               ))}
+              {video.topics.length > 1 && (
+                <span className="md:hidden text-xs text-gray-400 self-center">+{video.topics.length - 1}</span>
+              )}
             </div>
           )}
 
@@ -255,10 +264,13 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
                   For:
                </div>
                {video.targetAudience.map((a, i) => (
-                  <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                  <span key={i} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100${i > 0 ? ' hidden md:inline-flex' : ''}`}>
                     {a}
                   </span>
                ))}
+               {video.targetAudience.length > 1 && (
+                 <span className="md:hidden text-xs text-gray-400 self-center">+{video.targetAudience.length - 1}</span>
+               )}
             </div>
           )}
         </div>
