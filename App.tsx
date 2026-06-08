@@ -316,22 +316,23 @@ const App: React.FC = () => {
   const handleJsonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const input = e.target;
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
-        // Support both { videos: [...] } format and plain array
-        const videos: VideoEntry[] = Array.isArray(json) ? json : json.videos;
-        if (!videos || videos.length === 0) throw new Error("No videos found in JSON file.");
-        const updatedList = await videoStorage.bulkAdd(videos);
+        const importedVideos: VideoEntry[] = Array.isArray(json) ? json : json.videos;
+        if (!importedVideos || importedVideos.length === 0) throw new Error("No videos found in JSON file.");
+        const updatedList = await videoStorage.bulkAdd(importedVideos);
         setVideos(updatedList);
-        alert(`Success! Imported ${videos.length} videos from JSON backup.`);
+        input.value = '';
+        alert(`Success! Imported ${importedVideos.length} videos from JSON backup.`);
       } catch (error: any) {
+        input.value = '';
         alert(`JSON Import failed: ${error.message}`);
       }
     };
     reader.readAsText(file);
-    e.target.value = '';
   };
 
   const handleVideoUpdate = async (id: string, updates: Partial<VideoEntry>) => {
