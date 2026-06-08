@@ -50,10 +50,10 @@ const App: React.FC = () => {
       try {
         const fetched = await videoStorage.getAll();
         setVideos(fetched);
-        
-        // Sync Cloud Logs and initialize GeoData
-        await syncLogsWithCloud();
-        await initLoggerSession();
+
+        // Sync Cloud Logs and initialize GeoData (run in background, don't block loading)
+        syncLogsWithCloud();
+        initLoggerSession();
       } catch (e) { 
         console.error(e); 
       } finally { 
@@ -266,7 +266,7 @@ const App: React.FC = () => {
           // Helper to find the right column regardless of slight naming variations in the CSV
           const getVal = (possibleNames: string[]) => {
              const idx = headers.findIndex(h => possibleNames.some(n => h.includes(n)));
-             return idx !== -1 ? row[idx] : '';
+             return idx !== -1 ? (row[idx] ?? '') : '';
           };
 
           // Helper to parse comma or pipe-separated lists in a single cell
@@ -311,6 +311,27 @@ const App: React.FC = () => {
     
     reader.readAsText(file);
     e.target.value = ''; // Reset input
+  };
+
+  const handleJsonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        // Support both { videos: [...] } format and plain array
+        const videos: VideoEntry[] = Array.isArray(json) ? json : json.videos;
+        if (!videos || videos.length === 0) throw new Error("No videos found in JSON file.");
+        const updatedList = await videoStorage.bulkAdd(videos);
+        setVideos(updatedList);
+        alert(`Success! Imported ${videos.length} videos from JSON backup.`);
+      } catch (error: any) {
+        alert(`JSON Import failed: ${error.message}`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleVideoUpdate = async (id: string, updates: Partial<VideoEntry>) => {
@@ -506,15 +527,20 @@ const App: React.FC = () => {
                                   {/* Data Export Section */}
                                   <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Data Import</div>
 
+                                  <label htmlFor="json-upload" className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2 cursor-pointer">
+                                    <UploadCloud size={14} className="text-blue-600" /> Upload (JSON Backup)
+                                  </label>
+                                  <input id="json-upload" type="file" accept=".json" className="hidden" onChange={handleJsonUpload} />
+
                                   <label htmlFor="csv-upload" className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2 cursor-pointer">
                                   <UploadCloud size={14} className="text-purple-600" /> Upload (CSV)
                                   </label>
-                                  <input 
-                                  id="csv-upload" 
-                                  type="file" 
-                                  accept=".csv" 
-                                  className="hidden" 
-                                  onChange={handleCsvUpload} 
+                                  <input
+                                  id="csv-upload"
+                                  type="file"
+                                  accept=".csv"
+                                  className="hidden"
+                                  onChange={handleCsvUpload}
                                   />
 
                                   <div className="h-px bg-gray-100 my-1"></div>
