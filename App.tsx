@@ -23,6 +23,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [videos, setVideos] = useState<VideoEntry[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [filterState, setFilterState] = useState<FilterState>({
     searchQuery: '',
     selectedProfiles: [],
@@ -133,11 +134,11 @@ const App: React.FC = () => {
     }
 
     if (filterState.selectedProfiles.length > 0) {
-      result = result.filter(v => filterState.selectedProfiles.every(p => v.guestProfiles?.includes(p)));
+      result = result.filter(v => filterState.selectedProfiles.some(p => v.guestProfiles?.includes(p)));
     }
 
     if (filterState.selectedTopics.length > 0) {
-      result = result.filter(v => filterState.selectedTopics.every(t => v.topics?.includes(t)));
+      result = result.filter(v => filterState.selectedTopics.some(t => v.topics?.includes(t)));
     }
 
     if (filterState.shortsFilter === 'shorts') {
@@ -340,20 +341,31 @@ const App: React.FC = () => {
     
     {/* 1. RESPONSIVE SIDEBAR */}
     <div className={`
-      fixed inset-y-0 left-0 z-50 w-72 bg-white transform transition-transform duration-300 ease-in-out
+      fixed inset-y-0 left-0 z-50 bg-white transform transition-all duration-300 ease-in-out
       lg:relative lg:translate-x-0 lg:z-20 shrink-0
-      ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+      ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl w-72' : '-translate-x-full w-72'}
+      ${isSidebarCollapsed ? 'lg:w-0 lg:overflow-hidden' : 'lg:w-72'}
     `}>
-      <FilterSidebar 
+      <FilterSidebar
         videos={videos}
         filterState={filterState}
         setFilterState={setFilterState}
         availableProfiles={allProfiles}
         availableTopics={allTopics}
         isOpenMobile={isMobileMenuOpen}
-        closeMobile={() => setIsMobileMenuOpen(false)} 
+        closeMobile={() => setIsMobileMenuOpen(false)}
       />
     </div>
+
+    {/* Desktop sidebar toggle button */}
+    <button
+      onClick={() => setIsSidebarCollapsed(prev => !prev)}
+      className="hidden lg:flex items-center justify-center absolute left-0 top-1/2 -translate-y-1/2 z-30 w-5 h-12 bg-white border border-gray-200 rounded-r-lg shadow-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all"
+      style={{ left: isSidebarCollapsed ? '0px' : '288px' }}
+      title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+    >
+      {isSidebarCollapsed ? '›' : '‹'}
+    </button>
 
     {/* Mobile Backdrop */}
     {isMobileMenuOpen && (
