@@ -45,6 +45,8 @@ const App: React.FC = () => {
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [aiResultIds, setAiResultIds] = useState<string[] | null>(null);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc'); // 'desc' is Latest First
+  const jsonUploadRef = React.useRef<HTMLInputElement>(null);
+  const csvUploadRef = React.useRef<HTMLInputElement>(null);
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -313,26 +315,20 @@ const App: React.FC = () => {
     e.target.value = ''; // Reset input
   };
 
-  const handleJsonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleJsonUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const input = e.target;
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const json = JSON.parse(event.target?.result as string);
-        const importedVideos: VideoEntry[] = Array.isArray(json) ? json : json.videos;
-        if (!importedVideos || importedVideos.length === 0) throw new Error("No videos found in JSON file.");
-        const updatedList = await videoStorage.bulkAdd(importedVideos);
-        setVideos(updatedList);
-        input.value = '';
-        alert(`Success! Imported ${importedVideos.length} videos from JSON backup.`);
-      } catch (error: any) {
-        input.value = '';
-        alert(`JSON Import failed: ${error.message}`);
-      }
-    };
-    reader.readAsText(file);
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const importedVideos: VideoEntry[] = Array.isArray(json) ? json : json.videos;
+      if (!importedVideos || importedVideos.length === 0) throw new Error("No videos found in JSON file.");
+      const updatedList = await videoStorage.bulkAdd(importedVideos);
+      setVideos(updatedList);
+      alert(`Success! Imported ${importedVideos.length} videos from JSON backup.`);
+    } catch (error: any) {
+      alert(`JSON Import failed: ${error.message}`);
+    }
   };
 
   const handleVideoUpdate = async (id: string, updates: Partial<VideoEntry>) => {
@@ -528,13 +524,13 @@ const App: React.FC = () => {
                                   {/* Data Export Section */}
                                   <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Data Import</div>
 
-                                  <label htmlFor="json-upload" className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2 cursor-pointer">
+                                  <button onClick={() => jsonUploadRef.current?.click()} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2 cursor-pointer">
                                     <UploadCloud size={14} className="text-blue-600" /> Upload (JSON Backup)
-                                  </label>
+                                  </button>
 
-                                  <label htmlFor="csv-upload" className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2 cursor-pointer">
+                                  <button onClick={() => csvUploadRef.current?.click()} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2 cursor-pointer">
                                     <UploadCloud size={14} className="text-purple-600" /> Upload (CSV)
-                                  </label>
+                                  </button>
 
                                   <div className="h-px bg-gray-100 my-1"></div>
                                   <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Data Export</div>
@@ -620,8 +616,8 @@ const App: React.FC = () => {
     </div>
 
     {/* Hidden file inputs — must live outside dropdown so onChange fires reliably */}
-    <input id="json-upload" type="file" accept=".json" className="hidden" onChange={handleJsonUpload} />
-    <input id="csv-upload" type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} />
+    <input ref={jsonUploadRef} type="file" accept=".json" className="hidden" onChange={handleJsonUpload} />
+    <input ref={csvUploadRef} type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} />
 
     {/* MODALS */}
     {showPasswordModal && (
