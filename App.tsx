@@ -530,18 +530,10 @@ const App: React.FC = () => {
                                   <label htmlFor="json-upload" className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2 cursor-pointer">
                                     <UploadCloud size={14} className="text-blue-600" /> Upload (JSON Backup)
                                   </label>
-                                  <input id="json-upload" type="file" accept=".json" className="hidden" onChange={handleJsonUpload} />
 
                                   <label htmlFor="csv-upload" className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2 cursor-pointer">
-                                  <UploadCloud size={14} className="text-purple-600" /> Upload (CSV)
+                                    <UploadCloud size={14} className="text-purple-600" /> Upload (CSV)
                                   </label>
-                                  <input
-                                  id="csv-upload"
-                                  type="file"
-                                  accept=".csv"
-                                  className="hidden"
-                                  onChange={handleCsvUpload}
-                                  />
 
                                   <div className="h-px bg-gray-100 my-1"></div>
                                   <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Data Export</div>
@@ -625,6 +617,10 @@ const App: React.FC = () => {
         {view === 'docs' && <Documentation />}
       </main>
     </div>
+
+    {/* Hidden file inputs — must live outside dropdown so onChange fires reliably */}
+    <input id="json-upload" type="file" accept=".json" className="hidden" onChange={handleJsonUpload} />
+    <input id="csv-upload" type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} />
 
     {/* MODALS */}
     {showPasswordModal && (
