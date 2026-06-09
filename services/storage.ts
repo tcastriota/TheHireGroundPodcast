@@ -25,37 +25,28 @@ export const videoStorage = {
   // Add this new function to the videoStorage object in storage.ts
 bulkAdd: async (videos: VideoEntry[]): Promise<VideoEntry[]> => {
   try {
-    // 1. Get all current videos to check for duplicates
     const currentVideos = await videoStorage.getAll();
     const existingYoutubeIds = new Set(currentVideos.map(v => v.youtubeId));
 
-    const batch = writeBatch(db);
-    let importCount = 0;
+    const newVideos = videos.filter(v => !existingYoutubeIds.has(v.youtubeId));
+    console.log(`Importing ${newVideos.length} videos, skipping ${videos.length - newVideos.length} duplicates`);
 
-    videos.forEach((video) => {
-      // 2. Only stage the video if its youtubeId isn't already in the database
-      if (!existingYoutubeIds.has(video.youtubeId)) {
+    if (newVideos.length > 0) {
+      const { auth } = await import('./firebase');
+      console.log('Current auth user:', auth.currentUser?.email ?? 'NOT LOGGED IN');
+      // Write individually instead of batch to avoid hanging
+      for (const video of newVideos) {
         const id = video.id || crypto.randomUUID();
         const docRef = doc(db, COLLECTION_NAME, id);
-        batch.set(docRef, {
-          ...video,
-          id,
-          createdAt: video.createdAt || Date.now()
-        });
-        importCount++;
+        await setDoc(docRef, { ...video, id, createdAt: video.createdAt || Date.now() });
+        console.log(`Saved: ${video.title?.slice(0, 40)}`);
       }
-    });
-    
-    if (importCount > 0) {
-      await batch.commit();
-      console.log(`Successfully imported ${importCount} new episodes. Skipped duplicates.`);
-    } else {
-      console.log("No new episodes found to import.");
+      console.log('All videos saved successfully');
     }
 
     return await videoStorage.getAll();
   } catch (error) {
-    console.error("Error during filtered bulk import:", error);
+    console.error("bulkAdd failed:", error);
     throw error;
   }
 },

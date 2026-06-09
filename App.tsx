@@ -325,7 +325,7 @@ const App: React.FC = () => {
       if (!importedVideos || importedVideos.length === 0) throw new Error("No videos found in JSON file.");
       const updatedList = await videoStorage.bulkAdd(importedVideos);
       setVideos(updatedList);
-      alert(`Success! Imported ${importedVideos.length} videos from JSON backup.`);
+      alert(`Success! Imported ${updatedList.length} videos total from JSON backup.`);
     } catch (error: any) {
       alert(`JSON Import failed: ${error.message}`);
     }
