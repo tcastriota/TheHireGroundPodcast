@@ -318,16 +318,60 @@ const App: React.FC = () => {
   const handleJsonUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     try {
       const text = await file.text();
       const json = JSON.parse(text);
-      const importedVideos: VideoEntry[] = Array.isArray(json) ? json : json.videos;
-      if (!importedVideos || importedVideos.length === 0) throw new Error("No videos found in JSON file.");
-      const updatedList = await videoStorage.bulkAdd(importedVideos);
+
+      const importedVideos: VideoEntry[] = Array.isArray(json)
+        ? json
+        : Array.isArray(json.videos)
+          ? json.videos
+          : Array.isArray(json.data?.videos)
+            ? json.data.videos
+            : Array.isArray(json.items)
+              ? json.items
+              : Array.isArray(json.documents)
+                ? json.documents
+                : [];
+
+      if (!importedVideos || importedVideos.length === 0) {
+        throw new Error("No videos found in JSON file. Expected an array of video objects or a JSON object with a 'videos' array.");
+      }
+
+      const validVideos = importedVideos.filter((item: any) => item && (item.youtubeId || item.YouTubeID || item.youtubeID) && (item.title || item.Title));
+      if (validVideos.length === 0) {
+        throw new Error("Uploaded JSON contains no valid video records. Each item should include at least 'youtubeId' and 'title'.");
+      }
+
+      const normalizedVideos = validVideos.map((item: any) => ({
+        ...item,
+        youtubeId: item.youtubeId || item.YouTubeID || item.youtubeID || item.videoId || item.videoID || '',
+        title: item.title || item.Title || '',
+        headline: item.headline || item.Headline || item.headline || '',
+        description: item.description || item.Description || item.fullDescription || item.FullDescription || '',
+        fullDescription: item.fullDescription || item.FullDescription || item.description || item.Description || '',
+        guestName: item.guestName || item.GuestName || item.guest || item.Guest || '',
+        guestProfiles: item.guestProfiles || item.GuestProfiles || item.guestProfile || item.GuestProfile || [],
+        targetAudience: item.targetAudience || item.TargetAudience || item.audience || item.Audience || [],
+        topics: item.topics || item.Topics || [],
+        transcript: item.transcript || item.Transcript || '',
+        spotifyUrl: item.spotifyUrl || item.SpotifyUrl || item.spotifyURL || item.SpotifyURL || '',
+        publishedAt: item.publishedAt || item.PublishedDate || item.PublishedAt || '',
+        createdAt: typeof item.createdAt === 'number' ? item.createdAt : (item.createdAt ? Date.parse(item.createdAt as string) || Date.now() : Date.now()),
+        isShort: ['Y', 'N'].includes(item.isShort) ? item.isShort : ['Y', 'N'].includes(item.is_short) ? item.is_short : ['Y', 'N'].includes(item.IsShort) ? item.IsShort : ['Y', 'N'].includes(item.Short) ? item.Short : undefined,
+        id: item.id || crypto.randomUUID(),
+      })) as VideoEntry[];
+
+      const updatedList = await videoStorage.bulkAdd(normalizedVideos);
       setVideos(updatedList);
-      alert(`Success! Imported ${updatedList.length} videos total from JSON backup.`);
+      console.log(`JSON upload complete, refreshed videos count: ${updatedList.length}`);
+      alert(`Success! Imported ${normalizedVideos.length} videos from JSON backup.`);
     } catch (error: any) {
+      console.error("JSON Import failed:", error);
       alert(`JSON Import failed: ${error.message}`);
+    } finally {
+      e.target.value = '';
     }
   };
 
