@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [showOutdatedModal, setShowOutdatedModal] = useState(true);
 
   const [view, setView] = useState<'directory' | 'docs' | 'analytics' | 'tags'>('directory');
   
@@ -683,6 +684,38 @@ const App: React.FC = () => {
               <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all">Login</button>
             </div>
           </form>
+        </div>
+      </div>
+    )}
+
+    {showOutdatedModal && (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 backdrop-blur-sm p-4">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-sm p-8 flex flex-col items-center text-center">
+          <div className="mb-5 text-gray-800">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">Out of Date Version</h2>
+          <p className="text-gray-500 text-sm mb-7 leading-relaxed">
+            This is an out of date version of the prototype. Do you want me to redirect you to the latest version?
+          </p>
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={() => setShowOutdatedModal(false)}
+              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Close Window
+            </button>
+            <button
+              onClick={() => { window.location.href = 'https://thehiregroundpodcast-599900447713.us-east1.run.app/'; }}
+              className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
+            >
+              Yes, Redirect
+            </button>
+          </div>
         </div>
       </div>
     )}
