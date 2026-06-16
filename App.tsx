@@ -704,7 +704,7 @@ const App: React.FC = () => {
           </p>
           <div className="flex gap-3 w-full">
             <button
-              onClick={() => setShowOutdatedModal(false)}
+              onClick={() => window.close()}
               className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Close Window
