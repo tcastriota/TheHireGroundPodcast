@@ -38,7 +38,9 @@ const App: React.FC = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
-  const [showOutdatedModal, setShowOutdatedModal] = useState(true);
+  const [showOutdatedModal, setShowOutdatedModal] = useState(
+    window.location.hostname.includes('221885926112')
+  );
 
   const [view, setView] = useState<'directory' | 'docs' | 'analytics' | 'tags'>('directory');
   
