@@ -39,7 +39,7 @@ const App: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [showOutdatedModal, setShowOutdatedModal] = useState(
-    window.location.hostname.includes('221885926112')
+    window.location.hostname.includes('thehiregroundpodcastv1')
   );
 
   const [view, setView] = useState<'directory' | 'docs' | 'analytics' | 'tags'>('directory');
