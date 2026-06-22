@@ -68,6 +68,20 @@ export async function restUpdate(collection: string, docId: string, data: Record
   }
 }
 
+// Public write — no auth token required (used for activity logging from non-admin users)
+export async function restSetPublic(collection: string, docId: string, data: Record<string, any>): Promise<void> {
+  const url = `${BASE_URL}/${collection}/${docId}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(toDoc(data))
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || `Firestore public write failed: ${res.status}`);
+  }
+}
+
 // Equivalent to deleteDoc
 export async function restDelete(collection: string, docId: string): Promise<void> {
   const token = await getToken();

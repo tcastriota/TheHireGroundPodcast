@@ -1,6 +1,6 @@
 import { collection, getDocs, doc, query, orderBy } from "firebase/firestore";
 import { db } from "./firebase";
-import { restSet, restUpdate, restDelete } from "./firestoreRest";
+import { restSet, restSetPublic, restUpdate, restDelete } from "./firestoreRest";
 import { VideoEntry } from '../types';
 import { MASTER_SEED_DATA } from '../seedData';
 
@@ -66,7 +66,7 @@ export const videoStorage = {
   // 7. Save an activity log entry — REST API write
   saveLog: async (log: any) => {
     try {
-      await restSet(LOGS_COLLECTION, crypto.randomUUID(), log);
+      await restSetPublic(LOGS_COLLECTION, crypto.randomUUID(), log);
     } catch (e) {
       console.error("Cloud Logger Error:", e);
     }
