@@ -18,10 +18,6 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './services/firebase';
 
 const App: React.FC = () => {
-  if (window.location.hostname.includes('run.app')) {
-    window.location.replace('https://www.thehiregroundpodcast.com');
-    return null;
-  }
 
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
