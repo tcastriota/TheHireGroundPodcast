@@ -1,6 +1,7 @@
 import React from 'react';
 import { FilterState, VideoEntry } from '../types';
 import { Search, Filter, X, Zap, LayoutGrid, PlaySquare } from 'lucide-react';
+import { logEvent } from '../services/logger';
 
 interface FilterSidebarProps {
   videos: VideoEntry[];
@@ -17,21 +18,29 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 }) => {
   
   const toggleProfile = (profile: string) => {
-    setFilterState(prev => ({
-      ...prev,
-      selectedProfiles: prev.selectedProfiles.includes(profile)
-        ? prev.selectedProfiles.filter(p => p !== profile)
-        : [...prev.selectedProfiles, profile]
-    }));
+    setFilterState(prev => {
+      const isAdding = !prev.selectedProfiles.includes(profile);
+      if (isAdding) logEvent('FILTER_PROFILE', `Added profile: ${profile}`);
+      return {
+        ...prev,
+        selectedProfiles: isAdding
+          ? [...prev.selectedProfiles, profile]
+          : prev.selectedProfiles.filter(p => p !== profile)
+      };
+    });
   };
 
   const toggleTopic = (topic: string) => {
-    setFilterState(prev => ({
-      ...prev,
-      selectedTopics: prev.selectedTopics.includes(topic)
-        ? prev.selectedTopics.filter(t => t !== topic)
-        : [...prev.selectedTopics, topic]
-    }));
+    setFilterState(prev => {
+      const isAdding = !prev.selectedTopics.includes(topic);
+      if (isAdding) logEvent('FILTER_TOPIC', `Added topic: ${topic}`);
+      return {
+        ...prev,
+        selectedTopics: isAdding
+          ? [...prev.selectedTopics, topic]
+          : prev.selectedTopics.filter(t => t !== topic)
+      };
+    });
   };
 
   const isActive = filterState.selectedProfiles.length > 0 || 
