@@ -70,8 +70,14 @@ export const syncLogsWithCloud = async () => {
   try {
     const cloudLogs = await videoStorage.getAllLogs();
     if (cloudLogs && cloudLogs.length > 0) {
-      localStorage.setItem(LOG_KEY, JSON.stringify(cloudLogs));
-      return cloudLogs;
+      const localLogs = getLogs();
+      const cloudKeys = new Set(cloudLogs.map((l: LogEntry) => l.timestamp + l.action));
+      const localOnly = localLogs.filter(l => !cloudKeys.has(l.timestamp + l.action));
+      const merged = [...cloudLogs, ...localOnly]
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+        .slice(0, 1000);
+      localStorage.setItem(LOG_KEY, JSON.stringify(merged));
+      return merged;
     }
   } catch (error) {
     console.error("Failed to sync cloud logs:", error);
