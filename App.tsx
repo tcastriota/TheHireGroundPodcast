@@ -593,10 +593,10 @@ const App: React.FC = () => {
                                   
                                   {/* Logs Section */}
                                   <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Logs</div>
-                                  <button onClick={() => { downloadLogsAsCsv(); setIsSettingsOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2">
+                                  <button onClick={() => { downloadLogsAsCsv().then(() => setIsSettingsOpen(false)); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2">
                                       <FileSpreadsheet size={14} className="text-emerald-600" /> Activity Logs (CSV)
                                   </button>
-                                  <button onClick={() => { downloadLogsAsJson(); setIsSettingsOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2">
+                                  <button onClick={() => { downloadLogsAsJson().then(() => setIsSettingsOpen(false)); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2">
                                       <FileJson size={14} className="text-amber-600" /> Save Logs (logFile.json)
                                   </button>
 

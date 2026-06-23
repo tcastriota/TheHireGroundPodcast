@@ -196,13 +196,12 @@ export const getMarketingStats = (): MarketingStats => {
   return stats;
 };
 
-export const downloadLogsAsCsv = () => {
-  const logs = getLogs();
+export const downloadLogsAsCsv = async () => {
+  const logs = await syncLogsWithCloud();
   if (logs.length === 0) return alert("No logs found.");
 
   const headers = ["Timestamp", "ET Time", "Action", "Details", "IP", "City", "Country"];
-  
-  // Helper function to safely wrap every cell in quotes and escape internal quotes
+
   const escapeCSV = (val: any) => `"${String(val || '').replace(/"/g, '""')}"`;
 
   const rows = logs.map(log => [
@@ -215,7 +214,6 @@ export const downloadLogsAsCsv = () => {
     escapeCSV(log.session?.country)
   ]);
 
-  // Combine headers and rows, then trigger the download
   const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const downloadUrl = URL.createObjectURL(blob);
@@ -225,8 +223,8 @@ export const downloadLogsAsCsv = () => {
   link.click();
 };
 
-export const downloadLogsAsJson = () => {
-  const logs = getLogs();
+export const downloadLogsAsJson = async () => {
+  const logs = await syncLogsWithCloud();
   const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
