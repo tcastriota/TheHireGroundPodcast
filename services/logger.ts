@@ -66,18 +66,11 @@ export const initLoggerSession = async () => {
 /**
  * NEW: Syncs LocalStorage with Firestore logs so history is cross-device.
  */
-export const syncLogsWithCloud = async () => {
+export const syncLogsWithCloud = async (): Promise<LogEntry[]> => {
   try {
     const cloudLogs = await videoStorage.getAllLogs();
     if (cloudLogs && cloudLogs.length > 0) {
-      const localLogs = getLogs();
-      const cloudKeys = new Set(cloudLogs.map((l: LogEntry) => l.timestamp + l.action));
-      const localOnly = localLogs.filter(l => !cloudKeys.has(l.timestamp + l.action));
-      const merged = [...cloudLogs, ...localOnly]
-        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-        .slice(0, 1000);
-      localStorage.setItem(LOG_KEY, JSON.stringify(merged));
-      return merged;
+      return cloudLogs as LogEntry[];
     }
   } catch (error) {
     console.error("Failed to sync cloud logs:", error);
@@ -132,8 +125,8 @@ export const getLogs = (): LogEntry[] => {
 /**
  * Aggregates logs into marketing statistics.
  */
-export const getMarketingStats = (): MarketingStats => {
-  const logs = getLogs();
+export const getMarketingStats = (logs?: LogEntry[]): MarketingStats => {
+  if (!logs) logs = getLogs();
   const stats: MarketingStats = {
     totalSessions: 0,
     topCountries: [],
@@ -203,7 +196,7 @@ export const getMarketingStats = (): MarketingStats => {
 };
 
 export const downloadLogsAsCsv = async () => {
-  const logs = await syncLogsWithCloud();
+  const logs = await videoStorage.getAllLogs();
   if (logs.length === 0) return alert("No logs found.");
 
   const headers = ["Timestamp", "ET Time", "Action", "Details", "IP", "City", "Country"];
@@ -230,7 +223,7 @@ export const downloadLogsAsCsv = async () => {
 };
 
 export const downloadLogsAsJson = async () => {
-  const logs = await syncLogsWithCloud();
+  const logs = await videoStorage.getAllLogs();
   const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

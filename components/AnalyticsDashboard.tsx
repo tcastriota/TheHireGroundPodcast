@@ -19,11 +19,9 @@ export const AnalyticsDashboard: React.FC = () => {
     const loadAndSyncStats = async () => {
       setIsSyncing(true);
       try {
-        // 1. Sync local memory with Cloud Firestore logs
-        await syncLogsWithCloud();
-        
-        // 2. Calculate stats from the now-updated LocalStorage
-        setStats(getMarketingStats());
+        // Fetch all logs from Firestore and compute stats directly from cloud data
+        const cloudLogs = await syncLogsWithCloud();
+        setStats(getMarketingStats(cloudLogs));
       } catch (error) {
         console.error("Dashboard Sync Failed:", error);
       } finally {
