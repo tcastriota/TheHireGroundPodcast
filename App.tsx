@@ -4,16 +4,17 @@ import { FilterSidebar } from './components/FilterSidebar';
 import { VideoCard, ViewMode } from './components/VideoCard';
 import { videoStorage } from './services/storage';
 import { AddVideoModal } from './components/AddVideoModal';
-import { 
-  Sparkles, Mic, ArrowDown, ArrowUp, Lock, Plus, List, LayoutGrid, Grid, Layout, Menu, X, Loader2, 
-  BookOpen, BarChart3, Tags, Settings, Download, FileJson, UploadCloud, 
-  RefreshCcw, Database, FileSpreadsheet 
+import {
+  Sparkles, Mic, ArrowDown, ArrowUp, Lock, Plus, List, LayoutGrid, Grid, Layout, Menu, X, Loader2,
+  BookOpen, BarChart3, Tags, Settings, Download, FileJson, UploadCloud,
+  RefreshCcw, Database, FileSpreadsheet, Compass
 } from 'lucide-react';
 import { searchVideosWithAI } from './services/geminiService';
 import { logEvent, getLogs, initLoggerSession, syncLogsWithCloud, downloadLogsAsCsv, downloadLogsAsJson } from './services/logger';
 import { Documentation } from './components/Documentation';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { TagManager } from './components/TagManager';
+import { CareerPathQuiz } from './components/CareerPathQuiz';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './services/firebase';
 
@@ -43,7 +44,7 @@ const App: React.FC = () => {
     window.location.hostname.includes('221885926112')
   );
 
-  const [view, setView] = useState<'directory' | 'docs' | 'analytics' | 'tags'>('directory');
+  const [view, setView] = useState<'directory' | 'docs' | 'analytics' | 'tags' | 'quiz'>('directory');
   
   const [aiQuery, setAiQuery] = useState('');
   const [isAiSearching, setIsAiSearching] = useState(false);
@@ -538,6 +539,7 @@ const App: React.FC = () => {
               <button onClick={() => setView('analytics')} className={`p-2 rounded-lg hover:bg-gray-100 text-gray-500 hidden lg:block transition-colors ${view === 'analytics' ? 'bg-blue-50 text-blue-600' : ''}`}><BarChart3 size={18} /></button>
               <button onClick={() => setView('tags')} className={`p-2 rounded-lg hover:bg-gray-100 text-gray-500 hidden lg:block transition-colors ${view === 'tags' ? 'bg-blue-50 text-blue-600' : ''}`}><Tags size={18} /></button>
               <button onClick={() => setView('docs')} className={`p-2 rounded-lg hover:bg-gray-100 text-gray-500 hidden lg:block transition-colors ${view === 'docs' ? 'bg-blue-50 text-blue-600' : ''}`}><BookOpen size={18} /></button>
+              <button onClick={() => setView('quiz')} title="Career Path Quiz (testing)" className={`p-2 rounded-lg hover:bg-gray-100 text-gray-500 hidden lg:block transition-colors ${view === 'quiz' ? 'bg-blue-50 text-blue-600' : ''}`}><Compass size={18} /></button>
               
               <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white p-2 md:px-4 md:py-2 rounded-lg flex items-center gap-2 shadow-sm transition-all active:scale-95 shrink-0">
                 <Plus size={18} /> <span className="hidden md:inline text-sm font-bold">Add</span>
@@ -627,7 +629,11 @@ const App: React.FC = () => {
             <div className="mb-4 md:mb-6">
                 <p className="text-xs md:text-sm text-gray-500 font-medium">
                   Found <span className="text-blue-600 font-bold">{filteredVideos.length}</span> episodes
-                  {filterState.aiSearchActive && <span className="ml-2 text-blue-600 font-medium">(AI Filter Active)</span>}
+                  {filterState.aiSearchActive && (
+                    <span className="ml-2 text-blue-600 font-medium">
+                      {aiQuery ? '(AI Filter Active)' : '(Quiz Matches)'}
+                    </span>
+                  )}
                 </p>
             </div>
 
@@ -660,6 +666,17 @@ const App: React.FC = () => {
         {view === 'analytics' && <AnalyticsDashboard />}
         {view === 'tags' && <TagManager videos={videos} onUpdate={handleVideoUpdate} />}
         {view === 'docs' && <Documentation />}
+        {view === 'quiz' && (
+          <CareerPathQuiz
+            videos={videos}
+            onViewResults={(videoIds) => {
+              setAiQuery('');
+              setAiResultIds(videoIds);
+              setFilterState(prev => ({ ...prev, aiSearchActive: true, searchQuery: '' }));
+              setView('directory');
+            }}
+          />
+        )}
       </main>
     </div>
 
