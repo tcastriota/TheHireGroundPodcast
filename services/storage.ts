@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, query, orderBy, addDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "./firebase";
 import { restSet, restSetPublic, restUpdate, restDelete } from "./firestoreRest";
 import { VideoEntry } from '../types';
@@ -63,10 +63,10 @@ export const videoStorage = {
     return await videoStorage.getAll();
   },
 
-  // 7. Save an activity log entry — SDK write (public rule in firestore.rules)
+  // 7. Save an activity log entry — unauthenticated REST write (public rule in firestore.rules)
   saveLog: async (log: any) => {
     try {
-      await addDoc(collection(db, LOGS_COLLECTION), log);
+      await restSetPublic(LOGS_COLLECTION, crypto.randomUUID(), log);
     } catch (e) {
       console.error("Cloud Logger Error:", e);
     }
