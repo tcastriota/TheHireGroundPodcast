@@ -7,7 +7,7 @@ import { AddVideoModal } from './components/AddVideoModal';
 import {
   Sparkles, Mic, ArrowDown, ArrowUp, Lock, Plus, List, LayoutGrid, Grid, Layout, Menu, X, Loader2,
   BookOpen, BarChart3, Tags, Settings, Download, FileJson, UploadCloud,
-  RefreshCcw, Database, FileSpreadsheet, Compass
+  RefreshCcw, Database, FileSpreadsheet
 } from 'lucide-react';
 import { searchVideosWithAI } from './services/geminiService';
 import { logEvent, getLogs, initLoggerSession, syncLogsWithCloud, downloadLogsAsCsv, downloadLogsAsJson } from './services/logger';
@@ -447,17 +447,17 @@ const App: React.FC = () => {
       
       <header className="bg-white border-b border-gray-200 px-3 md:px-6 py-3 flex items-center justify-between shrink-0 relative z-30 gap-3 md:gap-6">
   
-        <div className="flex items-center gap-2 min-w-0 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
           <button onClick={() => setIsMobileMenuOpen(true)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg lg:hidden shrink-0">
             <Menu size={20} />
           </button>
-          <div className="bg-blue-100 p-1.5 rounded-lg text-blue-600 hidden sm:flex">
+          <div className="bg-blue-100 p-1.5 rounded-lg text-blue-600 hidden sm:flex shrink-0">
             <Mic size={18} />
           </div>
-          <h1 className="font-bold text-base md:text-xl truncate hidden sm:block text-gray-900">The Hire Ground Podcast</h1>
+          <h1 className={`font-bold text-base md:text-xl truncate hidden sm:block text-gray-900 ${isAdminMode ? 'max-w-[110px] 2xl:max-w-none' : 'max-w-[150px] xl:max-w-none'}`}>The Hire Ground Podcast</h1>
         </div>
 
-        <div className="flex-1 min-w-0 flex items-center justify-center max-w-md ml-4">
+        <div className="flex-1 min-w-0 flex items-center justify-center max-w-xs md:max-w-sm ml-2 md:ml-4">
           <form onSubmit={handleAiSearch} className="relative w-full flex items-center bg-white rounded-xl border border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all overflow-hidden h-10 md:h-12 group">
               <div className="pl-3 text-gray-400 flex items-center justify-center shrink-0">
                   {isAiSearching ? <Loader2 className="animate-spin text-blue-600" size={18} /> : <Sparkles className={`transition-colors ${aiResultIds ? "text-blue-600" : "text-gray-400 group-hover:text-blue-400"}`} size={18} />}
@@ -471,7 +471,7 @@ const App: React.FC = () => {
                       setFilterState(prev => ({ ...prev, searchQuery: val, aiSearchActive: false }));
                       setAiResultIds(null);
                   }}
-                  placeholder="Search episodes by title, guest, or topic..."
+                  placeholder="Search episodes..."
                   className="flex-1 px-3 h-full outline-none text-sm text-gray-700 placeholder-gray-400 min-w-0 bg-transparent"
               />
               {aiResultIds && (
@@ -479,7 +479,7 @@ const App: React.FC = () => {
                       <X size={16} />
                   </button>
               )}
-              <button type="submit" disabled={isAiSearching || !aiQuery.trim()} className="bg-gray-50 h-full hover:bg-gray-100 border-l border-gray-200 px-4 text-gray-600 font-medium text-sm transition-colors whitespace-nowrap disabled:opacity-50 shrink-0">
+              <button type="submit" disabled={isAiSearching || !aiQuery.trim()} className="hidden sm:block bg-gray-50 h-full hover:bg-gray-100 border-l border-gray-200 px-4 text-gray-600 font-medium text-sm transition-colors whitespace-nowrap disabled:opacity-50 shrink-0">
                   Search
               </button>
           </form>
@@ -505,9 +505,22 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
+           {/* Public Career Path Quiz CTA */}
+           <button
+              onClick={() => setView('quiz')}
+              title="Find Your Episode"
+              className={`flex items-center gap-1.5 px-2.5 md:px-4 h-10 rounded-xl font-bold text-sm shadow-sm transition-all active:scale-95 shrink-0 border ${
+                view === 'quiz' ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200'
+              }`}
+           >
+              <span className="text-base leading-none">🎯</span>
+              {/* Admin already has a full toolbar competing for header space, so keep this icon-only there */}
+              <span className={`whitespace-nowrap ${isAdminMode ? 'hidden' : 'hidden lg:inline'}`}>Find Your Episode</span>
+           </button>
+
            {/* Original Amber Highlight Layout Buttons */}
            {view === 'directory' && (
-             <div className="hidden sm:flex items-center bg-white p-0.5 rounded-lg border border-gray-200 overflow-hidden shadow-sm h-10">
+             <div className="hidden xl:flex items-center bg-white p-0.5 rounded-lg border border-gray-200 overflow-hidden shadow-sm h-10">
                  <button 
                      onClick={() => setViewMode('list')} 
                      className={`px-3 h-full flex items-center justify-center transition-all ${viewMode === 'list' ? 'bg-amber-100 text-amber-400 font-bold' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`} 
@@ -533,14 +546,13 @@ const App: React.FC = () => {
           )}
            
           {/* Admin Controls */}
-          {isAdminMode ? (
+          {isAdminMode && (
             <div className="flex items-center gap-1 md:gap-2 relative">
               {/* Dashboard Tabs */}
               <button onClick={() => setView('analytics')} className={`p-2 rounded-lg hover:bg-gray-100 text-gray-500 hidden lg:block transition-colors ${view === 'analytics' ? 'bg-blue-50 text-blue-600' : ''}`}><BarChart3 size={18} /></button>
               <button onClick={() => setView('tags')} className={`p-2 rounded-lg hover:bg-gray-100 text-gray-500 hidden lg:block transition-colors ${view === 'tags' ? 'bg-blue-50 text-blue-600' : ''}`}><Tags size={18} /></button>
               <button onClick={() => setView('docs')} className={`p-2 rounded-lg hover:bg-gray-100 text-gray-500 hidden lg:block transition-colors ${view === 'docs' ? 'bg-blue-50 text-blue-600' : ''}`}><BookOpen size={18} /></button>
-              <button onClick={() => setView('quiz')} title="Career Path Quiz (testing)" className={`p-2 rounded-lg hover:bg-gray-100 text-gray-500 hidden lg:block transition-colors ${view === 'quiz' ? 'bg-blue-50 text-blue-600' : ''}`}><Compass size={18} /></button>
-              
+
               <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white p-2 md:px-4 md:py-2 rounded-lg flex items-center gap-2 shadow-sm transition-all active:scale-95 shrink-0">
                 <Plus size={18} /> <span className="hidden md:inline text-sm font-bold">Add</span>
               </button>
@@ -614,10 +626,6 @@ const App: React.FC = () => {
                   )}
               </div>
             </div>
-          ) : (
-            <button onClick={() => setShowPasswordModal(true)} className="text-gray-400 hover:text-gray-600 p-2 flex items-center gap-1.5 transition-colors shrink-0">
-              <Lock size={18} /> <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider">Admin</span>
-            </button>
           )}
         </div>
       </header>
@@ -678,6 +686,18 @@ const App: React.FC = () => {
           />
         )}
       </main>
+
+      <footer className="shrink-0 border-t border-gray-200 bg-white px-3 md:px-6 py-2 flex items-center justify-between gap-3 text-xs text-gray-400">
+        <span className="truncate">&copy; {new Date().getFullYear()} The Hire Ground Podcast</span>
+        {!isAdminMode && (
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+          >
+            <Lock size={12} /> <span className="font-bold uppercase tracking-wider">Admin</span>
+          </button>
+        )}
+      </footer>
     </div>
 
     {/* Hidden file inputs — must live outside dropdown so onChange fires reliably */}
