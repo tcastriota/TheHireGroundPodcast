@@ -643,7 +643,7 @@ const App: React.FC = () => {
       {/* Search Bar (bottom of page) */}
       {view === 'directory' && (
         <div className="shrink-0 border-t border-gray-200 bg-white px-3 md:px-6 py-3 relative z-20">
-              <div className="max-w-2xl mx-auto flex items-center">
+          <div className="max-w-2xl mx-auto flex items-center">
               <form onSubmit={handleAiSearch} className="relative w-full flex items-center bg-white rounded-xl border border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all overflow-hidden h-10 md:h-12 group">
                   <div className="pl-3 text-gray-400 flex items-center justify-center shrink-0">
                       {isAiSearching ? <Loader2 className="animate-spin text-blue-600" size={18} /> : <Sparkles className={`transition-colors ${aiResultIds ? "text-blue-600" : "text-gray-400 group-hover:text-blue-400"}`} size={18} />}
