@@ -447,61 +447,14 @@ const App: React.FC = () => {
       
       <header className="bg-white border-b border-gray-200 px-3 md:px-6 py-3 flex items-center justify-between shrink-0 relative z-30 gap-3 md:gap-6">
   
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 sm:shrink-0">
           <button onClick={() => setIsMobileMenuOpen(true)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg lg:hidden shrink-0">
             <Menu size={20} />
           </button>
           <div className="bg-blue-100 p-1.5 rounded-lg text-blue-600 hidden sm:flex shrink-0">
             <Mic size={18} />
           </div>
-          <h1 className={`font-bold text-base md:text-xl truncate hidden sm:block text-gray-900 ${isAdminMode ? 'max-w-[110px] 2xl:max-w-none' : 'max-w-[150px] xl:max-w-none'}`}>The Hire Ground Podcast</h1>
-        </div>
-
-        <div className="flex-1 min-w-0 flex items-center justify-center max-w-xs md:max-w-sm ml-2 md:ml-4">
-          <form onSubmit={handleAiSearch} className="relative w-full flex items-center bg-white rounded-xl border border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all overflow-hidden h-10 md:h-12 group">
-              <div className="pl-3 text-gray-400 flex items-center justify-center shrink-0">
-                  {isAiSearching ? <Loader2 className="animate-spin text-blue-600" size={18} /> : <Sparkles className={`transition-colors ${aiResultIds ? "text-blue-600" : "text-gray-400 group-hover:text-blue-400"}`} size={18} />}
-              </div>
-              <input 
-                  type="text" 
-                  value={aiQuery}
-                  onChange={(e) => {
-                      const val = e.target.value;
-                      setAiQuery(val);
-                      setFilterState(prev => ({ ...prev, searchQuery: val, aiSearchActive: false }));
-                      setAiResultIds(null);
-                  }}
-                  placeholder="Search episodes..."
-                  className="flex-1 px-3 h-full outline-none text-sm text-gray-700 placeholder-gray-400 min-w-0 bg-transparent"
-              />
-              {aiResultIds && (
-                  <button type="button" onClick={clearAiSearch} className="px-3 h-full text-gray-400 hover:text-gray-600 border-l border-gray-100 flex items-center justify-center bg-gray-50 transition-colors shrink-0">
-                      <X size={16} />
-                  </button>
-              )}
-              <button type="submit" disabled={isAiSearching || !aiQuery.trim()} className="hidden sm:block bg-gray-50 h-full hover:bg-gray-100 border-l border-gray-200 px-4 text-gray-600 font-medium text-sm transition-colors whitespace-nowrap disabled:opacity-50 shrink-0">
-                  Search
-              </button>
-          </form>
-
-          {/* New Sort Buttons */}
-          <div className="flex items-center bg-white border border-gray-200 rounded-xl h-10 md:h-12 ml-2 overflow-hidden shadow-sm shrink-0">
-              <button 
-                  onClick={() => setSortOrder('desc')} 
-                  className={`px-3 h-full flex items-center justify-center transition-colors ${sortOrder === 'desc' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
-                  title="Latest First"
-              >
-                  <ArrowDown size={18} />
-              </button>
-              <div className="w-px h-full bg-gray-200"></div>
-              <button 
-                  onClick={() => setSortOrder('asc')} 
-                  className={`px-3 h-full flex items-center justify-center transition-colors ${sortOrder === 'asc' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
-                  title="Oldest First"
-              >
-                  <ArrowUp size={18} />
-              </button>
-          </div>
+          <h1 className="font-bold text-base md:text-xl leading-tight sm:whitespace-nowrap text-gray-900">The Hire Ground Podcast</h1>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -686,6 +639,58 @@ const App: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Search Bar (bottom of page) */}
+      {view === 'directory' && (
+        <div className="shrink-0 border-t border-gray-200 bg-white px-3 md:px-6 py-3 relative z-20">
+              <div className="max-w-2xl mx-auto flex items-center">
+              <form onSubmit={handleAiSearch} className="relative w-full flex items-center bg-white rounded-xl border border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all overflow-hidden h-10 md:h-12 group">
+                  <div className="pl-3 text-gray-400 flex items-center justify-center shrink-0">
+                      {isAiSearching ? <Loader2 className="animate-spin text-blue-600" size={18} /> : <Sparkles className={`transition-colors ${aiResultIds ? "text-blue-600" : "text-gray-400 group-hover:text-blue-400"}`} size={18} />}
+                  </div>
+                  <input 
+                      type="text" 
+                      value={aiQuery}
+                      onChange={(e) => {
+                          const val = e.target.value;
+                          setAiQuery(val);
+                          setFilterState(prev => ({ ...prev, searchQuery: val, aiSearchActive: false }));
+                          setAiResultIds(null);
+                      }}
+                      placeholder="Search episodes..."
+                      className="flex-1 px-3 h-full outline-none text-sm text-gray-700 placeholder-gray-400 min-w-0 bg-transparent"
+                  />
+                  {aiResultIds && (
+                      <button type="button" onClick={clearAiSearch} className="px-3 h-full text-gray-400 hover:text-gray-600 border-l border-gray-100 flex items-center justify-center bg-gray-50 transition-colors shrink-0">
+                          <X size={16} />
+                      </button>
+                  )}
+                  <button type="submit" disabled={isAiSearching || !aiQuery.trim()} className="hidden sm:block bg-gray-50 h-full hover:bg-gray-100 border-l border-gray-200 px-4 text-gray-600 font-medium text-sm transition-colors whitespace-nowrap disabled:opacity-50 shrink-0">
+                      Search
+                  </button>
+              </form>
+
+              {/* New Sort Buttons */}
+              <div className="flex items-center bg-white border border-gray-200 rounded-xl h-10 md:h-12 ml-2 overflow-hidden shadow-sm shrink-0">
+                  <button 
+                      onClick={() => setSortOrder('desc')} 
+                      className={`px-3 h-full flex items-center justify-center transition-colors ${sortOrder === 'desc' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
+                      title="Latest First"
+                  >
+                      <ArrowDown size={18} />
+                  </button>
+                  <div className="w-px h-full bg-gray-200"></div>
+                  <button 
+                      onClick={() => setSortOrder('asc')} 
+                      className={`px-3 h-full flex items-center justify-center transition-colors ${sortOrder === 'asc' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
+                      title="Oldest First"
+                  >
+                      <ArrowUp size={18} />
+                  </button>
+              </div>
+          </div>
+        </div>
+      )}
 
       <footer className="shrink-0 border-t border-gray-200 bg-white px-3 md:px-6 py-2 flex items-center justify-between gap-3 text-xs text-gray-400">
         <span className="truncate">&copy; {new Date().getFullYear()} The Hire Ground Podcast</span>
