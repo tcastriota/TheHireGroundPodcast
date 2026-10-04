@@ -62,12 +62,12 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
   // 1. LIST VIEW
   if (viewMode === 'list') {
     return (
-      <div className="group bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 flex flex-row h-32 relative">
+      <div className="group bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 flex flex-row min-h-[8rem] relative">
         <div className="relative w-48 bg-gray-100 flex-shrink-0">
           <img
             src={thumbnail}
             alt={video.title}
-            className={`w-full h-full object-cover ${!hasYoutube ? 'opacity-80 grayscale-[30%]' : ''}`}
+            className={`absolute inset-0 w-full h-full object-cover ${!hasYoutube ? 'opacity-80 grayscale-[30%]' : ''}`}
             onError={(e) => { (e.target as HTMLImageElement).src = PENDING_IMAGE; }}
           />
           {isShort && (
@@ -87,7 +87,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
               {video.guestName && <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wide">{video.guestName}</span>}
               <span className="text-[10px] text-gray-400 flex items-center gap-1"><Calendar size={10} /> {displayDate}</span>
             </div>
-            <h3 className="font-semibold text-sm text-gray-900 leading-tight line-clamp-1 mb-1" title={video.title}>
+            <h3 className="font-semibold text-sm text-gray-900 leading-tight mb-1 shrink-0" title={video.title}>
                {video.title}
             </h3>
             
