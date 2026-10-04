@@ -10,6 +10,7 @@ import {
   RefreshCcw, Database, FileSpreadsheet
 } from 'lucide-react';
 import { searchVideosWithAI } from './services/geminiService';
+import { smartSearch } from './utils/smartSearch';
 import { logEvent, getLogs, initLoggerSession, syncLogsWithCloud, downloadLogsAsCsv, downloadLogsAsJson } from './services/logger';
 import { Documentation } from './components/Documentation';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
@@ -93,28 +94,30 @@ const App: React.FC = () => {
     if (e) e.preventDefault();
     if (!aiQuery.trim()) return;
 
-    setIsAiSearching(true);
     setFilterState(prev => ({ ...prev, searchQuery: '', aiSearchActive: false }));
 
+    // 1. Instant local search (handles typos + related words)
+    const localIds = smartSearch(aiQuery, videos);
+    if (localIds.length > 0) {
+        setAiResultIds(localIds);
+        setFilterState(prev => ({ ...prev, aiSearchActive: true }));
+        logEvent('AI_SEARCH_SUCCESS', `Prompt: "${aiQuery}" | Found: ${localIds.length} (local)`);
+        return;
+    }
+
+    // 2. Nothing found locally: ask Gemini (via our server) to match on meaning
+    setIsAiSearching(true);
     try {
-        console.log("Sending to Gemini:", aiQuery);
         const ids = await searchVideosWithAI(aiQuery, videos);
-        
-        if (ids && ids.length > 0) {
-            setAiResultIds(ids);
-            setFilterState(prev => ({ ...prev, aiSearchActive: true }));
-            logEvent('AI_SEARCH_SUCCESS', `Prompt: "${aiQuery}" | Found: ${ids.length}`);
-        } else {
-            alert("AI couldn't find matches. Try rephrasing!");
-            setAiResultIds([]); 
-            setFilterState(prev => ({ ...prev, aiSearchActive: true }));
-            logEvent('AI_SEARCH_EMPTY', `Prompt: "${aiQuery}"`);
-        }
+        setAiResultIds(ids);
+        setFilterState(prev => ({ ...prev, aiSearchActive: true }));
+        logEvent(ids.length ? 'AI_SEARCH_SUCCESS' : 'AI_SEARCH_EMPTY', `Prompt: "${aiQuery}" | Found: ${ids.length} (gemini)`);
     } catch (err: any) {
-        console.error("AI Search CRASHED:", err);
-        alert(`AI Error: ${err.message || 'Check console'}. Are you sure your API key is valid?`);
+        // AI unavailable (e.g. key not configured): just show the normal "No episodes found" state
+        console.warn("AI search unavailable:", err?.message || err);
         setAiResultIds([]);
         setFilterState(prev => ({ ...prev, aiSearchActive: true }));
+        logEvent('AI_SEARCH_EMPTY', `Prompt: "${aiQuery}" | AI unavailable`);
     } finally {
         setIsAiSearching(false);
     }
@@ -132,12 +135,8 @@ const App: React.FC = () => {
     if (filterState.aiSearchActive && aiResultIds) {
       result = result.filter(v => aiResultIds.includes(v.id));
     } else if (filterState.searchQuery) {
-      const q = filterState.searchQuery.toLowerCase();
-      result = result.filter(v => 
-        v.title.toLowerCase().includes(q) || 
-        (v.guestName && v.guestName.toLowerCase().includes(q)) ||
-        (v.topics && v.topics.some(t => t.toLowerCase().includes(q)))
-      );
+      const matchIds = new Set(smartSearch(filterState.searchQuery, result));
+      result = result.filter(v => matchIds.has(v.id));
     }
 
     if (filterState.selectedProfiles.length > 0) {
