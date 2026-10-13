@@ -18,7 +18,7 @@ const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2',
-  '.txt': 'text/plain; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8',
 };
 
 // --- Simple per-IP rate limit so the endpoint can't be abused as a free Gemini proxy ---
@@ -130,7 +130,12 @@ const serveStatic = (req, res) => {
 
   fs.stat(file, (err, stat) => {
     if (!err && stat.isDirectory()) file = path.join(file, 'index.html');
-    else if (err) file = path.join(DIST, 'index.html'); // SPA fallback
+    else if (err) {
+      // Missing files (anything with an extension, e.g. /robots.txt typos, old asset names)
+      // get a real 404 instead of the homepage, so search engines don't index junk URLs
+      if (path.extname(urlPath)) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('Not found'); }
+      file = path.join(DIST, 'index.html'); // SPA fallback for page routes
+    }
 
     fs.readFile(file, (readErr, buf) => {
       if (readErr) { res.writeHead(404); return res.end('Not found'); }
