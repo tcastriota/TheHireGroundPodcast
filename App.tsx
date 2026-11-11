@@ -16,6 +16,8 @@ import { Documentation } from './components/Documentation';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { TagManager } from './components/TagManager';
 import { CareerPathQuiz } from './components/CareerPathQuiz';
+import { EpisodePage } from './components/EpisodePage';
+import { episodeIdFromPath, episodePath, findEpisodeByIdPrefix, hasEpisodePage } from './utils/episodes';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './services/firebase';
 
@@ -57,6 +59,66 @@ const App: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc'); // 'desc' is Latest First
   const jsonUploadRef = React.useRef<HTMLInputElement>(null);
   const csvUploadRef = React.useRef<HTMLInputElement>(null);
+  const mainRef = React.useRef<HTMLElement>(null);
+
+  // --- EPISODE PAGES (/episodes/<slug>-<id>) ---
+  const [episodeIdPrefix, setEpisodeIdPrefix] = useState<string | null>(() => episodeIdFromPath(window.location.pathname));
+  const currentEpisode = episodeIdPrefix ? findEpisodeByIdPrefix(videos, episodeIdPrefix) : undefined;
+
+  const openEpisode = (video: VideoEntry) => {
+    window.history.pushState({}, '', episodePath(video));
+    setEpisodeIdPrefix(video.id.slice(0, 8));
+    setView('directory');
+    mainRef.current?.scrollTo(0, 0);
+    logEvent('EPISODE_PAGE_OPEN', `Opened episode page: ${video.title}`);
+  };
+
+  const goHome = (replace = false) => {
+    if (window.location.pathname !== '/') {
+      if (replace) window.history.replaceState({}, '', '/');
+      else window.history.pushState({}, '', '/');
+    }
+    setEpisodeIdPrefix(null);
+  };
+
+  // Browser Back/Forward buttons
+  useEffect(() => {
+    const onPop = () => setEpisodeIdPrefix(episodeIdFromPath(window.location.pathname));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  // Leaving the directory (quiz, admin tabs) closes the episode page
+  useEffect(() => {
+    if (view !== 'directory' && episodeIdPrefix) goHome(true);
+  }, [view]);
+
+  // Per-page title, description and canonical URL
+  const defaultHead = React.useRef({
+    title: document.title,
+    description: document.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+  });
+  useEffect(() => {
+    const setMeta = (selector: string, attr: string, value: string) => document.querySelector(selector)?.setAttribute(attr, value);
+    if (currentEpisode) {
+      const path = episodePath(currentEpisode);
+      // Fix up old/edited slugs so every episode has exactly one URL
+      if (window.location.pathname !== path) window.history.replaceState({}, '', path);
+      document.title = `${currentEpisode.title} | The Hire Ground Podcast`;
+      setMeta('meta[name="description"]', 'content', (currentEpisode.headline || defaultHead.current.description).slice(0, 160));
+      setMeta('link[rel="canonical"]', 'href', `https://thehiregroundpodcast.com${path}`);
+    } else {
+      document.title = defaultHead.current.title;
+      setMeta('meta[name="description"]', 'content', defaultHead.current.description);
+      setMeta('link[rel="canonical"]', 'href', 'https://thehiregroundpodcast.com/');
+    }
+  }, [currentEpisode]);
+
+  // Changing filters in the sidebar returns to the episode list
+  const setFilterFromSidebar: typeof setFilterState = (update) => {
+    if (episodeIdPrefix) goHome();
+    setFilterState(update);
+  };
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -423,7 +485,7 @@ const App: React.FC = () => {
       <FilterSidebar
         videos={videos}
         filterState={filterState}
-        setFilterState={setFilterState}
+        setFilterState={setFilterFromSidebar}
         availableProfiles={allProfiles}
         availableTopics={allTopics}
         isOpenMobile={isMobileMenuOpen}
@@ -612,8 +674,25 @@ const App: React.FC = () => {
       </header>
 
       {/* VIDEO FEED */}
-      <main className="flex-1 overflow-y-auto p-3 md:p-6 bg-gray-50 relative z-10">
-        {view === 'directory' && (
+      <main ref={mainRef} className="flex-1 overflow-y-auto p-3 md:p-6 bg-gray-50 relative z-10">
+        {view === 'directory' && episodeIdPrefix && (
+          currentEpisode ? (
+            <EpisodePage
+              video={currentEpisode}
+              isAdmin={isAdminMode}
+              onBack={() => goHome()}
+              onEdit={(video) => { setEditingVideo(video); setIsModalOpen(true); }}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Episode not found</h3>
+              <p className="text-gray-500 max-w-sm mx-auto">This episode may have been removed or the link is incorrect.</p>
+              <button onClick={() => goHome()} className="mt-4 text-blue-600 font-medium hover:underline">Browse all episodes</button>
+            </div>
+          )
+        )}
+
+        {view === 'directory' && !episodeIdPrefix && (
           <div className="max-w-7xl mx-auto">
             <div className="mb-4 md:mb-6">
                 <p className="text-xs md:text-sm text-gray-500 font-medium">
@@ -639,6 +718,8 @@ const App: React.FC = () => {
                       isAdmin={isAdminMode} 
                       onEdit={() => { setEditingVideo(video); setIsModalOpen(true); }}
                       viewMode={viewMode}
+                      episodeHref={hasEpisodePage(video) ? episodePath(video) : undefined}
+                      onOpenEpisode={() => openEpisode(video)}
                   />
               ))}
           </div>
@@ -669,7 +750,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Search Bar (bottom of page) */}
-      {view === 'directory' && (
+      {view === 'directory' && !episodeIdPrefix && (
         <div className="shrink-0 border-t border-gray-200 bg-white px-3 md:px-6 py-2 relative z-20">
           <div className="max-w-2xl mx-auto flex items-center">
               <form onSubmit={handleAiSearch} className="relative w-full flex items-center bg-white rounded-xl border border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all overflow-hidden h-9 group">

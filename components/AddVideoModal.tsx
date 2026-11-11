@@ -22,6 +22,7 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
   const [title, setTitle] = useState('');
   const [headline, setHeadline] = useState('');
   const [fullDescription, setFullDescription] = useState('');
+  const [transcript, setTranscript] = useState('');
   const [guestName, setGuestName] = useState('');
   const [isShort, setIsShort] = useState<'Y' | 'N'>('N');
   const [youtubeId, setYoutubeId] = useState('');
@@ -44,6 +45,8 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
       setTitle(editVideo.title || '');
       setHeadline(editVideo.headline || '');
       setFullDescription(editVideo.fullDescription || '');
+      // Old entries hold placeholders like "Not Available"; show those as empty
+      setTranscript((editVideo.transcript || '').trim().length > 20 ? editVideo.transcript || '' : '');
       setGuestName(editVideo.guestName || '');
       setIsShort(editVideo.isShort === 'Y' ? 'Y' : 'N');
       setYoutubeId(editVideo.youtubeId || '');
@@ -57,7 +60,7 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
   }, [editVideo, isOpen]);
 
   const resetForm = () => {
-    setTitle(''); setHeadline(''); setFullDescription(''); setGuestName('');
+    setTitle(''); setHeadline(''); setFullDescription(''); setTranscript(''); setGuestName('');
     setIsShort('N'); setYoutubeId(''); setSpotifyUrl('');
     setGuestProfiles([]); setTargetAudience([]); setTopics([]);
     setProfileInput(''); setAudienceInput(''); setTopicInput('');
@@ -94,7 +97,7 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
     const finalYoutubeId = cleanYoutubeId(youtubeId);
 
     const videoData = {
-      title, headline, fullDescription, guestName, isShort, 
+      title, headline, fullDescription, transcript, guestName, isShort, 
       youtubeId: finalYoutubeId, spotifyUrl, guestProfiles, targetAudience, topics
     };
 
@@ -164,6 +167,12 @@ export const AddVideoModal: React.FC<AddVideoModalProps> = ({
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Full Description</label>
             <textarea value={fullDescription} onChange={e => setFullDescription(e.target.value)} rows={4} className="w-full border p-2.5 rounded-lg outline-none" placeholder="Detailed episode notes..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Transcript</label>
+            <textarea value={transcript} onChange={e => setTranscript(e.target.value)} rows={6} className="w-full border p-2.5 rounded-lg outline-none text-sm" placeholder="Paste the full episode transcript (e.g. from YouTube Studio captions)..." />
+            <p className="text-[11px] text-gray-400 mt-1">Shown on the episode's own page. Leave empty if not available yet.</p>
           </div>
 
           {/* Tag Editors */}

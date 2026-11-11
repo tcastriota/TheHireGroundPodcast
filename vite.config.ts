@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: './', // 👈 Ensures relative paths for CSS/JS to fix 404s
+      base: '/', // Absolute asset paths so deep links like /episodes/... load /assets/* correctly
       server: {
         port: 3000,
         host: '0.0.0.0',

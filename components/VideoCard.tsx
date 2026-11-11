@@ -10,11 +10,14 @@ interface VideoCardProps {
   isAdmin: boolean;
   onEdit: (video: VideoEntry) => void;
   viewMode?: ViewMode;
+  // When set, the thumbnail/title open this episode's own page instead of YouTube
+  episodeHref?: string;
+  onOpenEpisode?: () => void;
 }
 
 const PENDING_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='225' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%239ca3af'%3EThumbnail Pending%3C/text%3E%3C/svg%3E";
 
-export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, viewMode = 'detailed' }) => {
+export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, viewMode = 'detailed', episodeHref, onOpenEpisode }) => {
   const [showFullDesc, setShowFullDesc] = useState(false);
   
   const hasYoutube = video.youtubeId && video.youtubeId.trim().length > 0;
@@ -43,6 +46,23 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
       logEvent('VIDEO_WATCH_CLICK', `User clicked to watch: ${video.title} (${video.youtubeId})`);
   };
   
+  // Thumbnail/title link: the episode page if this episode has one, otherwise YouTube.
+  // Ctrl/Cmd-click still opens the episode page in a new tab.
+  const mainLinkProps = episodeHref
+    ? {
+        href: episodeHref,
+        onClick: (e: React.MouseEvent) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+          e.preventDefault();
+          onOpenEpisode?.();
+        },
+      }
+    : { href: getYoutubeUrl(video.youtubeId), target: '_blank', rel: 'noopener noreferrer', onClick: handleWatchClick };
+
+  const titleContent = episodeHref
+    ? <a {...mainLinkProps} className="hover:text-blue-600 transition-colors">{video.title}</a>
+    : video.title;
+
   const handleSpotifyClick = () => {
       logEvent('VIDEO_SPOTIFY_CLICK', `User clicked Spotify: ${video.title}`);
   };
@@ -76,7 +96,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
             </div>
           )}
           {hasYoutube && (
-             <a href={getYoutubeUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" onClick={handleWatchClick} className="absolute inset-0 flex items-center justify-center bg-black/10 hover:bg-black/30 transition-colors group-hover:opacity-100">
+             <a {...mainLinkProps} className="absolute inset-0 flex items-center justify-center bg-black/10 hover:bg-black/30 transition-colors group-hover:opacity-100">
                 <Play fill="white" className="text-white drop-shadow-md opacity-0 group-hover:opacity-100 transition-opacity" size={24} />
              </a>
           )}
@@ -88,7 +108,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
               <span className="text-[10px] text-gray-400 flex items-center gap-1"><Calendar size={10} /> {displayDate}</span>
             </div>
             <h3 className="font-semibold text-sm text-gray-900 leading-tight mb-1 shrink-0" title={video.title}>
-               {video.title}
+               {titleContent}
             </h3>
             
             {video.targetAudience && video.targetAudience.length > 0 && (
@@ -127,7 +147,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
           <img src={thumbnail} alt={video.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = PENDING_IMAGE; }} />
           {isShort && <div className="absolute top-2 left-2 z-20 flex items-center gap-1 bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase shadow-sm"><Zap size={10} fill="currentColor" /> Short</div>}
           {hasYoutube ? (
-            <a href={getYoutubeUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" onClick={handleWatchClick} className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px] z-10">
+            <a {...mainLinkProps} className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px] z-10">
               <div className="bg-white text-gray-900 p-3 rounded-full shadow-lg transform scale-90 group-hover:scale-100 transition-transform"><Play fill="currentColor" size={20} /></div>
             </a>
           ) : (
@@ -138,7 +158,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
         <div className="p-4 flex flex-col flex-grow relative z-0 bg-white">
           <div className="mb-2">
              {video.guestName && <span className="text-xs font-bold text-blue-600 uppercase tracking-wide block mb-1">Guest: {video.guestName}</span>}
-             <h3 className="font-bold text-base text-gray-900 line-clamp-2 leading-tight" title={video.title}>{video.title}</h3>
+             <h3 className="font-bold text-base text-gray-900 line-clamp-2 leading-tight" title={video.title}>{titleContent}</h3>
           </div>
           
           <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
@@ -185,10 +205,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
 
         {hasYoutube ? (
           <a
-            href={getYoutubeUrl(video.youtubeId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={handleWatchClick}
+            {...mainLinkProps}
             className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px] z-10"
           >
             <div className="bg-red-600 text-white p-3 rounded-full shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
@@ -213,7 +230,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, isAdmin, onEdit, vi
            )}
            <div className="flex items-start justify-between gap-2">
               <h3 className="font-semibold text-lg leading-tight text-gray-900 line-clamp-2" title={video.title}>
-                {video.title}
+                {titleContent}
               </h3>
            </div>
         </div>
