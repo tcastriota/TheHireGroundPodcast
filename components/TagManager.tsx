@@ -415,7 +415,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ videos, onUpdate }) => {
                 </div>
 
                 <div className="flex items-center gap-6">
-                  <div className="text-sm text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded">
+                  <div className="text-sm text-gray-500 tabular-nums bg-gray-100 px-2 py-0.5 rounded">
                     {stat.count} {stat.count === 1 ? 'video' : 'videos'}
                   </div>
                   

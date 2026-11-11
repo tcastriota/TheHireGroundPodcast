@@ -190,7 +190,7 @@ export const AnalyticsDashboard: React.FC = () => {
                                         </span>
                                     )}
                                 </td>
-                                <td className="px-6 py-3 text-sm text-gray-500 text-right font-mono text-xs">
+                                <td className="px-6 py-3 text-sm text-gray-500 text-right tabular-nums text-xs">
                                     {new Date(search.timestamp).toLocaleDateString()} {new Date(search.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                 </td>
                             </tr>
