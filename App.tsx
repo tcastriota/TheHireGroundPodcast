@@ -19,6 +19,9 @@ import { CareerPathQuiz } from './components/CareerPathQuiz';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './services/firebase';
 
+// Accounts allowed to use Admin mode. Keep in sync with firestore.rules.
+const ADMIN_EMAILS = ['admin@thehireground.com', 'taibalo@bu.edu'];
+
 const App: React.FC = () => {
 
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -40,6 +43,7 @@ const App: React.FC = () => {
   const [editingVideo, setEditingVideo] = useState<VideoEntry | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [showOutdatedModal, setShowOutdatedModal] = useState(
     window.location.hostname.includes('221885926112')
@@ -74,11 +78,15 @@ const App: React.FC = () => {
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, 'admin@thehireground.com', passwordInput);
+      const email = emailInput.trim().toLowerCase();
+      // Only these accounts may log in as admin (must match firestore.rules)
+      if (!ADMIN_EMAILS.includes(email)) throw new Error('Not an admin email');
+      await signInWithEmailAndPassword(auth, email, passwordInput);
       setIsAdminMode(true);
       setShowPasswordModal(false);
       setPasswordError(false);
       setPasswordInput('');
+      setEmailInput('');
       logEvent('ADMIN_LOGIN_SUCCESS', 'User logged in as admin');
     } catch (error) {
       console.error("Login failed", error);
@@ -717,14 +725,23 @@ const App: React.FC = () => {
           <h2 className="text-lg font-bold mb-4">Admin Login</h2>
           <form onSubmit={handleAdminLogin}>
             <input 
-              type="password" 
+              type="email" 
               autoFocus
+              autoComplete="username"
+              className="w-full border border-gray-200 p-2.5 rounded-lg mb-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              placeholder="Email"
+            />
+            <input 
+              type="password" 
+              autoComplete="current-password"
               className="w-full border border-gray-200 p-2.5 rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder="Enter password..."
+              placeholder="Password"
             />
-            {passwordError && <p className="text-red-500 text-xs mb-3">Incorrect password.</p>}
+            {passwordError && <p className="text-red-500 text-xs mb-3">Incorrect email or password.</p>}
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setShowPasswordModal(false)} className="px-4 py-2 text-gray-500 text-sm font-medium hover:bg-gray-100 rounded-lg">Cancel</button>
               <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all">Login</button>

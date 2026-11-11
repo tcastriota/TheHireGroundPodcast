@@ -7,7 +7,8 @@ service cloud.firestore {
     }
     match /{document=**} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.email == 'admin@thehireground.com';
+      // Only these admin accounts can add/edit/delete content (keep in sync with ADMIN_EMAILS in App.tsx)
+      allow write: if request.auth != null && request.auth.token.email in ['admin@thehireground.com', 'taibalo@bu.edu'];
     }
   }
 }
