@@ -14,6 +14,15 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 const DIST = path.join(path.dirname(fileURLToPath(import.meta.url)), 'dist');
 
+// The one official address of the site. Other hostnames that reach this server
+// (www. and the *.run.app Cloud Run URL) get a permanent redirect here, so Google
+// only ever sees one copy of the site and indexes the real domain.
+const CANONICAL_HOST = process.env.CANONICAL_HOST || 'thehiregroundpodcast.com';
+const shouldRedirectHost = (host = '') => {
+  const h = host.toLowerCase().split(':')[0];
+  return h === `www.${CANONICAL_HOST}` || h.endsWith('.run.app');
+};
+
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg',
@@ -150,6 +159,11 @@ const serveStatic = (req, res) => {
 };
 
 http.createServer((req, res) => {
+  // Send www. and *.run.app visitors to the official domain (page loads only)
+  if ((req.method === 'GET' || req.method === 'HEAD') && shouldRedirectHost(req.headers.host)) {
+    res.writeHead(301, { Location: `https://${CANONICAL_HOST}${req.url}` });
+    return res.end();
+  }
   // Cloud Run forwards the original protocol; send http:// visitors to https://
   if (req.headers['x-forwarded-proto'] === 'http') {
     res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });

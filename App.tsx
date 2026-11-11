@@ -756,7 +756,7 @@ const App: React.FC = () => {
               Close Window
             </button>
             <button
-              onClick={() => { window.location.href = 'https://thehiregroundpodcast-599900447713.us-east1.run.app/'; }}
+              onClick={() => { window.location.href = 'https://thehiregroundpodcast.com/'; }}
               className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
             >
               Yes, Redirect
