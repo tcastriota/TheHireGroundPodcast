@@ -152,8 +152,18 @@ const serveStatic = (req, res) => {
       const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
       // Hashed build assets can be cached forever; index.html must always be fresh
       headers['Cache-Control'] = urlPath.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache';
+      // Episode pages: point the canonical/og:url at the episode itself (not the homepage)
+      // in the HTML Google first receives, before any JavaScript runs
+      let body = buf;
+      const episodeMatch = urlPath.match(/^\/episodes\/([a-z0-9-]+)\/?$/i);
+      if (ext === '.html' && episodeMatch) {
+        const pageUrl = `https://${CANONICAL_HOST}/episodes/${episodeMatch[1]}`;
+        body = Buffer.from(buf.toString('utf8')
+          .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${pageUrl}$2`)
+          .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${pageUrl}$2`));
+      }
       res.writeHead(200, headers);
-      res.end(req.method === 'HEAD' ? undefined : buf);
+      res.end(req.method === 'HEAD' ? undefined : body);
     });
   });
 };
