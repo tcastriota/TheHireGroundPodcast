@@ -678,6 +678,7 @@ const App: React.FC = () => {
         {view === 'directory' && episodeIdPrefix && (
           currentEpisode ? (
             <EpisodePage
+              key={currentEpisode.id}
               video={currentEpisode}
               isAdmin={isAdminMode}
               onBack={() => goHome()}
