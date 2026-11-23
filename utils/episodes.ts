@@ -4,16 +4,11 @@ import { VideoEntry } from '../types';
 // Each episode gets its own URL: /episodes/<title-slug>-<first 8 chars of id>
 // The id suffix keeps links working even if the title is edited later.
 
-// Episodes that currently open their own page when clicked (trial rollout).
-// Add ids here to enable more, or remove this check to enable every episode.
-export const EPISODE_PAGE_IDS = new Set<string>([
-  '840b3c35-a568-4d39-bc55-3de32d33a277', // Rachel Hyman (Season 3, Episode 1)
-]);
-
-export const hasEpisodePage = (video: VideoEntry) => EPISODE_PAGE_IDS.has(video.id);
+// Every episode (and Short) opens its own page when clicked.
+export const hasEpisodePage = (video: VideoEntry) => Boolean(video.id);
 
 const slugify = (s: string) =>
-  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/, '');
 
 export const episodePath = (video: VideoEntry) =>
@@ -25,8 +20,9 @@ export const episodeIdFromPath = (pathname: string): string | null => {
   return m ? m[1].toLowerCase() : null;
 };
 
+// Case-insensitive: older ids are mixed-case (e.g. "bAgISEIK..."), URLs may not be
 export const findEpisodeByIdPrefix = (videos: VideoEntry[], prefix: string) =>
-  videos.find(v => v.id.toLowerCase().startsWith(prefix));
+  videos.find(v => v.id.toLowerCase().startsWith(prefix.toLowerCase()));
 
 // Old entries use placeholders like "Not Available" instead of a real transcript
 export const realTranscript = (t?: string) => {

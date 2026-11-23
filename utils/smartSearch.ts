@@ -69,7 +69,7 @@ const RELATED_TERMS: string[][] = [
 ];
 
 const normalize = (s: string) =>
-  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 
 // Light stemmer so "interviews", "interviewing" and "interviewer" all compare as "interview"
 const stem = (w: string) => {

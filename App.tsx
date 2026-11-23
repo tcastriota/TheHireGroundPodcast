@@ -67,7 +67,7 @@ const App: React.FC = () => {
 
   const openEpisode = (video: VideoEntry) => {
     window.history.pushState({}, '', episodePath(video));
-    setEpisodeIdPrefix(video.id.slice(0, 8));
+    setEpisodeIdPrefix(video.id.slice(0, 8).toLowerCase());
     setView('directory');
     mainRef.current?.scrollTo(0, 0);
     logEvent('EPISODE_PAGE_OPEN', `Opened episode page: ${video.title}`);
