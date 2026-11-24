@@ -36,6 +36,7 @@ const App: React.FC = () => {
     searchQuery: '',
     selectedProfiles: [],
     selectedTopics: [],
+    selectedAudiences: [],
     aiSearchActive: false,
     shortsFilter: 'all'
   });
@@ -215,6 +216,10 @@ const App: React.FC = () => {
 
     if (filterState.selectedTopics.length > 0) {
       result = result.filter(v => filterState.selectedTopics.some(t => v.topics?.includes(t)));
+    }
+
+    if (filterState.selectedAudiences.length > 0) {
+      result = result.filter(v => filterState.selectedAudiences.some(a => v.targetAudience?.includes(a)));
     }
 
     if (filterState.shortsFilter === 'shorts') {
@@ -488,6 +493,7 @@ const App: React.FC = () => {
         setFilterState={setFilterFromSidebar}
         availableProfiles={allProfiles}
         availableTopics={allTopics}
+        availableAudiences={allAudiences}
         isOpenMobile={isMobileMenuOpen}
         closeMobile={() => setIsMobileMenuOpen(false)}
       />

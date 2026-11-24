@@ -21,6 +21,7 @@ export interface FilterState {
   searchQuery: string;
   selectedProfiles: string[];
   selectedTopics: string[];
+  selectedAudiences: string[];
   aiSearchActive: boolean;
   shortsFilter: 'all' | 'shorts' | 'videos'; // Filter for content format
 }
