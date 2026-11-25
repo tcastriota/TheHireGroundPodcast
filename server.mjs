@@ -130,6 +130,98 @@ ${JSON.stringify(catalog)}`;
   }
 };
 
+// --- Sitemap (/sitemap.xml) built from the live episode database ---
+// Lists the homepage plus every episode page, with Google video info, so new
+// episodes are picked up automatically. Cached for an hour.
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'thehiregroundpodcastv2';
+const SITEMAP_CACHE_MS = 60 * 60_000;
+let sitemapCache = { at: 0, xml: '' };
+
+// Must match episodePath() in utils/episodes.ts
+const slugify = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/, '');
+const episodePath = (v) => `/episodes/${slugify(v.title || '') || 'episode'}-${v.id.slice(0, 8)}`;
+
+const xmlEscape = (s) => String(s ?? '').replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]))
+  // strip characters that are invalid in XML
+  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, '');
+
+const cleanYouTubeId = (id) => {
+  const m = String(id || '').match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  return m ? m[1] : String(id || '').trim();
+};
+
+// Read all videos through Firestore's public REST API (videos are publicly readable)
+const fetchAllVideos = async () => {
+  const videos = [];
+  let pageToken = '';
+  do {
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/videos?pageSize=300${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Firestore ${r.status}`);
+    const data = await r.json();
+    for (const doc of data.documents || []) {
+      const f = doc.fields || {};
+      const str = (k) => f[k]?.stringValue ?? '';
+      videos.push({
+        id: doc.name.split('/').pop(),
+        title: str('title'),
+        headline: str('headline'),
+        fullDescription: str('fullDescription'),
+        youtubeId: str('youtubeId'),
+        publishedAt: str('publishedAt'),
+        updateTime: doc.updateTime,
+      });
+    }
+    pageToken = data.nextPageToken || '';
+  } while (pageToken);
+  return videos;
+};
+
+const isoDate = (s) => { const d = new Date(s); return isNaN(d) ? null : d.toISOString(); };
+
+const buildSitemap = async () => {
+  const site = `https://${CANONICAL_HOST}`;
+  const videos = (await fetchAllVideos()).filter(v => v.id && v.title);
+  const latest = videos.map(v => v.updateTime).filter(Boolean).sort().pop();
+  const urls = [`  <url>\n    <loc>${site}/</loc>${latest ? `\n    <lastmod>${latest}</lastmod>` : ''}\n  </url>`];
+  for (const v of videos) {
+    const ytId = cleanYouTubeId(v.youtubeId);
+    const published = isoDate(v.publishedAt);
+    const description = (v.headline || v.fullDescription || v.title).slice(0, 2000);
+    const video = /^[A-Za-z0-9_-]{11}$/.test(ytId) ? `
+    <video:video>
+      <video:thumbnail_loc>https://i.ytimg.com/vi/${ytId}/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>${xmlEscape(v.title.slice(0, 100))}</video:title>
+      <video:description>${xmlEscape(description)}</video:description>
+      <video:player_loc>https://www.youtube.com/embed/${ytId}</video:player_loc>${published ? `
+      <video:publication_date>${published}</video:publication_date>` : ''}
+    </video:video>` : '';
+    urls.push(`  <url>\n    <loc>${xmlEscape(site + episodePath(v))}</loc>${v.updateTime ? `\n    <lastmod>${v.updateTime}</lastmod>` : ''}${video}\n  </url>`);
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+${urls.join('\n')}
+</urlset>
+`;
+};
+
+const handleSitemap = async (req, res) => {
+  let xml = sitemapCache.xml;
+  if (!xml || Date.now() - sitemapCache.at > SITEMAP_CACHE_MS) {
+    try {
+      xml = await buildSitemap();
+      sitemapCache = { at: Date.now(), xml };
+    } catch (err) {
+      console.error('Sitemap build failed', err?.message || err);
+      // Serve the last good copy, or at least the homepage
+      xml = sitemapCache.xml || `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://${CANONICAL_HOST}/</loc>\n  </url>\n</urlset>\n`;
+    }
+  }
+  res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+  res.end(req.method === 'HEAD' ? undefined : xml);
+};
+
 const serveStatic = (req, res) => {
   let urlPath;
   try { urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname); }
@@ -178,6 +270,9 @@ http.createServer((req, res) => {
   if (req.headers['x-forwarded-proto'] === 'http') {
     res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
     return res.end();
+  }
+  if (req.url === '/sitemap.xml' && (req.method === 'GET' || req.method === 'HEAD')) {
+    return handleSitemap(req, res);
   }
   if (req.url === '/api/search') {
     if (req.method !== 'POST') return sendJson(res, 405, { error: 'method_not_allowed' });
