@@ -3,6 +3,7 @@ import { VideoEntry } from '../types';
 // --- EPISODE PAGES ---
 // Each episode gets its own URL: /episodes/<title-slug>-<first 8 chars of id>
 // The id suffix keeps links working even if the title is edited later.
+// NOTE: server.mjs builds sitemap.xml with a copy of slugify/episodePath. Keep them identical.
 
 // Every episode (and Short) opens its own page when clicked.
 export const hasEpisodePage = (video: VideoEntry) => Boolean(video.id);
