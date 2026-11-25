@@ -73,7 +73,10 @@ export const YouTubeSync: React.FC<YouTubeSyncProps> = ({ videos, onClose, onApp
     try {
       const ids = [...new Set(videos.map(v => cleanId(v.youtubeId)).filter(id => /^[A-Za-z0-9_-]{11}$/.test(id)))];
       const res = await fetch(`/api/youtube-meta?ids=${ids.join(',')}`);
-      if (!res.ok) throw new Error(res.status === 429 ? 'Too many requests, wait a minute and try again.' : `Server error (${res.status})`);
+      if (!res.ok) throw new Error(
+        res.status === 429 ? 'Too many requests, wait a minute and try again.'
+        : res.status === 502 ? 'YouTube API error. Check the YOUTUBE_API_KEY in Cloud Run and that the YouTube Data API is enabled.'
+        : `Server error (${res.status})`);
       setMeta((await res.json()).items || {});
     } catch (e: any) {
       setError(e?.message || 'Could not reach YouTube.');
@@ -108,6 +111,8 @@ export const YouTubeSync: React.FC<YouTubeSyncProps> = ({ videos, onClose, onApp
   useEffect(() => { setSelected(new Set(diffs.filter(d => d.cutOff).map(keyOf))); }, [diffs]);
 
   const visible = showAll ? diffs : diffs.filter(d => d.cutOff);
+  // Videos where YouTube returned a title but no description (descriptions blocked)
+  const missingDescriptions = Object.values(meta).filter(m => m.title !== null && m.description === null).length;
   const cutOffCount = diffs.filter(d => d.cutOff).length;
 
   const toggle = (k: string) => setSelected(prev => {
@@ -161,6 +166,15 @@ export const YouTubeSync: React.FC<YouTubeSyncProps> = ({ videos, onClose, onApp
             </div>
           ) : (
             <>
+              {missingDescriptions > 0 && (
+                <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                  <span>
+                    Couldn't read descriptions for {missingDescriptions} video{missingDescriptions === 1 ? '' : 's'} from YouTube, so description differences aren't shown.
+                    Add a <strong>YOUTUBE_API_KEY</strong> to the Cloud Run service to fix this.
+                  </span>
+                </div>
+              )}
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <p className="text-sm text-gray-600">
                   <strong>{diffs.length}</strong> difference{diffs.length === 1 ? '' : 's'} found

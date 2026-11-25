@@ -135,6 +135,10 @@ ${JSON.stringify(catalog)}`;
 // Title comes from YouTube's public oEmbed endpoint; the full description is read
 // from the public watch page. Only public data, no API key needed.
 const YT_ID = /^[A-Za-z0-9_-]{11}$/;
+// Preferred source: the official YouTube Data API (set YOUTUBE_API_KEY in Cloud Run).
+// Without it we fall back to scraping, which YouTube blocks from cloud servers, so
+// descriptions usually come back empty.
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
 const ytCache = new Map(); // id -> { at, data }
 const YT_CACHE_MS = 5 * 60_000;
 
@@ -170,13 +174,40 @@ const fetchYouTubeMeta = async (id) => {
   return data;
 };
 
+// Official API: up to 50 videos per request, full title + description
+const fetchYouTubeMetaViaApi = async (ids) => {
+  const items = {};
+  for (let i = 0; i < ids.length; i += 50) {
+    const batch = ids.slice(i, i + 50);
+    const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${batch.join(',')}`, {
+      headers: { 'x-goog-api-key': YOUTUBE_API_KEY },
+    });
+    if (!r.ok) {
+      console.error('YouTube Data API error', r.status, (await r.text()).slice(0, 300));
+      throw new Error(`youtube_api_${r.status}`);
+    }
+    const data = await r.json();
+    for (const v of data.items || []) items[v.id] = { title: v.snippet?.title ?? null, description: v.snippet?.description ?? null };
+  }
+  for (const id of ids) if (!items[id]) items[id] = { title: null, description: null }; // private/deleted
+  return items;
+};
+
 const handleYouTubeMeta = async (req, res) => {
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress;
   if (rateLimited(ip)) return sendJson(res, 429, { error: 'rate_limited' });
   const ids = [...new Set((new URL(req.url, 'http://x').searchParams.get('ids') || '').split(','))].filter(id => YT_ID.test(id));
   if (ids.length === 0 || ids.length > 150) return sendJson(res, 400, { error: 'bad_request' });
 
-  // Fetch a few at a time to stay polite to YouTube
+  if (YOUTUBE_API_KEY) {
+    try {
+      return sendJson(res, 200, { items: await fetchYouTubeMetaViaApi(ids), source: 'api' });
+    } catch {
+      return sendJson(res, 502, { error: 'youtube_api_error' });
+    }
+  }
+
+  // Fallback: scrape a few at a time to stay polite to YouTube
   const items = {};
   const queue = [...ids];
   await Promise.all(Array.from({ length: 6 }, async () => {
@@ -185,7 +216,7 @@ const handleYouTubeMeta = async (req, res) => {
       items[id] = await fetchYouTubeMeta(id);
     }
   }));
-  return sendJson(res, 200, { items });
+  return sendJson(res, 200, { items, source: 'scrape' });
 };
 
 const serveStatic = (req, res) => {
