@@ -17,6 +17,7 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { TagManager } from './components/TagManager';
 import { CareerPathQuiz } from './components/CareerPathQuiz';
 import { EpisodePage } from './components/EpisodePage';
+import { YouTubeSync } from './components/YouTubeSync';
 import { episodeIdFromPath, episodePath, findEpisodeByIdPrefix, hasEpisodePage } from './utils/episodes';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './services/firebase';
@@ -42,6 +43,7 @@ const App: React.FC = () => {
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showYouTubeSync, setShowYouTubeSync] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<VideoEntry | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -463,6 +465,23 @@ const App: React.FC = () => {
       }
   };
 
+  // Save the changes approved in the "Sync from YouTube" tool
+  const handleYouTubeSyncApply = async (changes: { id: string; updates: Partial<VideoEntry> }[]) => {
+      let saved = 0, failed = 0, latest: VideoEntry[] | null = null;
+      for (const { id, updates } of changes) {
+          try {
+              latest = await videoStorage.update(id, updates);
+              saved++;
+          } catch (e) {
+              console.error('YouTube sync save failed', id, e);
+              failed++;
+          }
+      }
+      if (latest) setVideos(latest);
+      logEvent('YOUTUBE_SYNC', `Applied ${saved} episode update(s) from YouTube${failed ? `, ${failed} failed` : ''}`);
+      return { saved, failed };
+  };
+
   const handleVideoDelete = async (id: string) => {
       if (window.confirm("Are you sure you want to permanently delete this episode?")) {
           const updatedList = await videoStorage.delete(id);
@@ -625,6 +644,9 @@ const App: React.FC = () => {
                                   <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">System</div>
                                   <button onClick={() => { setShowPublishModal(true); setIsSettingsOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2">
                                       <UploadCloud size={14} className="text-green-600" /> Publish Updates
+                                  </button>
+                                  <button onClick={() => { setShowYouTubeSync(true); setIsSettingsOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2">
+                                      <RefreshCcw size={14} className="text-red-500" /> Sync from YouTube
                                   </button>
                                   <button onClick={() => { handleResetApp(); setIsSettingsOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2">
                                       <RefreshCcw size={14} className="text-red-600" /> Factory Reset
@@ -807,6 +829,10 @@ const App: React.FC = () => {
     <input ref={csvUploadRef} type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} />
 
     {/* MODALS */}
+    {showYouTubeSync && isAdminMode && (
+      <YouTubeSync videos={videos} onClose={() => setShowYouTubeSync(false)} onApply={handleYouTubeSyncApply} />
+    )}
+
     {showPasswordModal && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm animate-in fade-in zoom-in duration-200">

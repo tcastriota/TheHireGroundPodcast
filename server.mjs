@@ -130,6 +130,64 @@ ${JSON.stringify(catalog)}`;
   }
 };
 
+// --- YouTube metadata for the admin "Sync from YouTube" tool ---
+// GET /api/youtube-meta?ids=ID1,ID2,... -> { items: { ID: { title, description } } }
+// Title comes from YouTube's public oEmbed endpoint; the full description is read
+// from the public watch page. Only public data, no API key needed.
+const YT_ID = /^[A-Za-z0-9_-]{11}$/;
+const ytCache = new Map(); // id -> { at, data }
+const YT_CACHE_MS = 5 * 60_000;
+
+const fetchText = async (url, timeoutMs = 15_000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'en-US,en;q=0.9', Cookie: 'CONSENT=YES+1' },
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.text();
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const fetchYouTubeMeta = async (id) => {
+  const cached = ytCache.get(id);
+  if (cached && Date.now() - cached.at < YT_CACHE_MS) return cached.data;
+  const data = { title: null, description: null };
+  try {
+    const o = JSON.parse(await fetchText(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}`));
+    data.title = typeof o.title === 'string' ? o.title : null;
+  } catch { /* leave null */ }
+  try {
+    const html = await fetchText(`https://www.youtube.com/watch?v=${id}&hl=en`);
+    const m = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
+    if (m) data.description = JSON.parse(`"${m[1]}"`);
+  } catch { /* leave null */ }
+  if (data.title !== null || data.description !== null) ytCache.set(id, { at: Date.now(), data });
+  return data;
+};
+
+const handleYouTubeMeta = async (req, res) => {
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress;
+  if (rateLimited(ip)) return sendJson(res, 429, { error: 'rate_limited' });
+  const ids = [...new Set((new URL(req.url, 'http://x').searchParams.get('ids') || '').split(','))].filter(id => YT_ID.test(id));
+  if (ids.length === 0 || ids.length > 150) return sendJson(res, 400, { error: 'bad_request' });
+
+  // Fetch a few at a time to stay polite to YouTube
+  const items = {};
+  const queue = [...ids];
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (queue.length) {
+      const id = queue.shift();
+      items[id] = await fetchYouTubeMeta(id);
+    }
+  }));
+  return sendJson(res, 200, { items });
+};
+
 const serveStatic = (req, res) => {
   let urlPath;
   try { urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname); }
@@ -178,6 +236,10 @@ http.createServer((req, res) => {
   if (req.headers['x-forwarded-proto'] === 'http') {
     res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
     return res.end();
+  }
+  if (req.url.startsWith('/api/youtube-meta')) {
+    if (req.method !== 'GET') return sendJson(res, 405, { error: 'method_not_allowed' });
+    return handleYouTubeMeta(req, res);
   }
   if (req.url === '/api/search') {
     if (req.method !== 'POST') return sendJson(res, 405, { error: 'method_not_allowed' });
